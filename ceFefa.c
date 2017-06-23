@@ -26,10 +26,12 @@ Comentario:    *<comentario>
 
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include <complex.h>
+#include <time.h>
 
 #define MAX_CHAR_LINHA 80
 #define MAX_NOME 11
@@ -82,13 +84,15 @@ char
   escala[3],
   noA[MAX_NOME], noB[MAX_NOME], noC[MAX_NOME], noD[MAX_NOME],
   *p,
+  *novonome,
+  *txt,
   elemento,
   linha[MAX_CHAR_LINHA],
   file[MAX_NOME_ARQUIVO];
 
-double pontos, freqInicial, freqFinal, Yn[MAX_NOS][MAX_NOS], g, variavelAtual[MAX_NOS], variavelProxima[MAX_NOS],
+double pontos, freqInicial, freqFinal, frequencia, Yn[MAX_NOS][MAX_NOS], g, variavelAtual[MAX_NOS], variavelProxima[MAX_NOS],
        VC, VB, VE, VBC, VBE, VCE, gc, ge, g1, g2, g3, vMaxExp, vbcAux, vbeAux, ic, ie, i0, cbcdir, cbcrev, cbedir, cberev,
-       indutanciaMutua;
+       indutanciaMutua, passo;
 
 FILE *arquivo;
 
@@ -134,6 +138,10 @@ double sind (double ang)
     return (t);
 }
 
+double complex 
+    gComplex, amplitude, fase,
+    YnComplex[MAX_NOS][MAX_NOS+2];  //matriz nodal com complexos (análise da resposta em frequencia)
+
 double cosd (double ang)
 {
     double t = cos( (ang / 180.0) * PI );
@@ -148,14 +156,15 @@ double cosd (double ang)
 }
 
 void trocaNome(){ //rotina que troca extensao de .net para .tab
-  do {n++;} while(nomearquivo[n]!='.');
-  memcpy(novonome, &nomearquivo[0],n);
+  int n;
+  do {n++;} while(file[n]!='.');
+  memcpy(novonome, &file[0],n);
     novonome[n]='\0';
   strcpy(novonome,strcat(novonome,".tab"));
   printf("\nResultados escritos no arquivo %s",novonome);
 }
 
-int resolversistemaDC(void)
+int resolverSistemaDC(void)
 {
   int i,j,l,a;
   double t, p;
@@ -488,11 +497,14 @@ void montaEstampaDC(void) {
 } // end of montaEstampaDC
 
 void montaEstampaAC(void){
+  int i, j;
+  char tipo;
+
     for (i=0; i<=numeroVariaveis+1; i++) {
       for (j=0; j<=numeroVariaveis+1; j++)
         YnComplex[i][j]=0.0 + 0.0*I;
     }
-  linear = 0;
+  nBJTs = 0;
   for (i=1; i<=nElementos; i++) {
         tipo = netlist[i].nome[0];
         if (tipo=='R') {
@@ -771,6 +783,175 @@ int main(void)
     printf("O circuito e linear. Tem %d nos, %d variaveis e %d elementos\n",numeroNos,numeroVariaveis,nElementos);
   }
   
+  int j;
+  for (i=0; i<=numeroVariaveis; i++) {
+    for (j=0; j<=numeroVariaveis+1; j++)
+      Yn[i][j]=0;
+  }
+  /* Monta estampas */
+  int k;
+  while(fim==0){
+    contador++; 
+     nBJTs=0;    
+   /* Zera sistema */                   
+     montaEstampaDC();        
+      /* Resolve o sistema */
+    if (resolverSistemaDC()) {
+      
+      exit;
+    }
+    //if(contador==1){mostraNetlist();}
+ 
+    verificaConvergencia();
+
+    for (k = 1; (k <=numeroVariaveis)&&(k != -1);){
+    if(convergencia[k]==1){k++;}
+    else{k=-1;}
+  }
+    if (k==numeroVariaveis+1){fim =1;}
+      else if (contador==10000){fim =1;} 
+     
+     if (nBJTs==0){fim=1; }
+  }//fim do while
+  
+  
+  //printf("Netlist interno final:\n");
+  //mostraNetlist();
+    
+  printf("\n%d iteracoes foram realizadas.\n",contador);
+  contador=0;  
+  printf("\n%d Elementos nao lineares\n",nBJTs);
+  for(i=1;i<=nBJTs;i++){
+    for(j = 1; j <=numeroVariaveis; j++){
+    if (convergencia[j] == 0){contador++;}
+      }
+  }
+   
+   if(nBJTs !=0){   
+    for(i=1;i<=numeroVariaveis;i++)
+      {printf("\n Convergencia na variavel %d : %d",i,convergencia[i]);}
+    }
+   
+   printf("Numero de nos: %d",k);
+  if(contador!=0)
+    printf("\n%d solucoes nao convergiram. Ultima solucao do sistema:\n",contador);
+  else
+    printf("\nSolucao do Ponto de Operacao:\n");
+
+  strcpy(txt,"Tensao");
+  for (i=1; i<=numeroVariaveis; i++) {
+    if (i==numeroNos+1) strcpy(txt,"Corrente");
+    printf("%s %s: %g\n",txt,lista[i],Yn[i][numeroVariaveis+1]);
+  }
+  
+  
+  //RESPOSTA EM FREQUENCIA 
+  
+  if(tem==1){
+  printf("\nAnalise de Resposta em Frequencia:\n"); 
+  
+  for (i=0; i<=numeroVariaveis; i++) {
+      for (j=0; j<=numeroVariaveis+1; j++)
+        YnComplex[i][j]=0.0 + 0.0*I;
+    }   
+    trocaNome();
+  
+  if(strcmp(escala,"LIN")==0){
+    
+  passo=(freqFinal-freqInicial)/(pontos+1);
+    
+  arquivo = fopen(novonome, "w");
+  fprintf(arquivo,"f ");
+  for (i=1; i<=numeroVariaveis; i++)
+    fprintf(arquivo,"%sm %sf ",lista[i],lista[i]);
+  fprintf(arquivo,"\n");
+  
+  if(arquivo == NULL)
+    printf("Erro, nao foi possivel abrir o arquivo\n");
+  else{
+    
+      for(frequencia=freqInicial;frequencia<=freqFinal;frequencia+=passo){
+            nBJTs=0;
+        montaEstampaAC();
+            resolversistemaAC();
+
+      fprintf(arquivo,"%g ",frequencia);
+      for (i=1; i<=numeroVariaveis; i++) {
+          fprintf(arquivo,"%g %g ",cabs(YnComplex[i][numeroVariaveis+1]),(180/PI)*carg(YnComplex[i][numeroVariaveis+1]));
+        } 
+      fprintf(arquivo,"\n");          
+      }
+      
+  }
+  fclose(arquivo);
+  
+  }
+  else if (strcmp(escala,"DEC")==0){
+    if(pontos!=0)
+      passo=1.0/(pontos-1.0);
+    else
+      pontos=1;
+    arquivo = fopen(novonome, "w");
+    fprintf(arquivo,"f ");
+    for (i=1; i<=numeroVariaveis; i++)
+    fprintf(arquivo,"%sm %sf ",lista[i],lista[i]);
+    fprintf(arquivo,"\n");
+    
+    if(arquivo == NULL)
+      printf("Erro, nao foi possivel abrir o arquivo\n");
+
+  else{
+      for(frequencia=freqInicial;frequencia<=freqFinal; frequencia*=pow(10,passo)) {
+          nBJTs=0;
+          montaEstampaAC();
+          resolversistemaAC();
+      
+          fprintf(arquivo,"%g ",frequencia);
+          for (i=1; i<=numeroVariaveis; i++)
+            fprintf(arquivo,"%g %g ",cabs(YnComplex[i][numeroVariaveis+1]),(180/PI)*carg(YnComplex[i][numeroVariaveis+1]));
+          fprintf(arquivo,"\n");        
+      }
+  }
+
+  fclose(arquivo);
+  
+  }
+      
+   else if (strcmp(escala,"OCT")==0){
+      passo=1.0/(pontos-1.0);       
+      arquivo = fopen(novonome, "w");
+      fprintf(arquivo,"f ");
+      for (i=1; i<=numeroVariaveis; i++)
+        fprintf(arquivo,"%sm %sf ",lista[i],lista[i]);
+      fprintf(arquivo,"\n");
+      
+    if(arquivo == NULL)
+      printf("Erro, nao foi possivel abrir o arquivo\n");
+      else{
+      
+        for(frequencia=freqInicial;frequencia<=freqFinal;frequencia*=pow(2,passo)){
+            nBJTs=0;
+            montaEstampaAC();
+            resolversistemaAC();
+
+        fprintf(arquivo,"%g ",frequencia);
+        for (i=1; i<=numeroVariaveis; i++) {
+            fprintf(arquivo,"%g %g ",cabs(YnComplex[i][numeroVariaveis+1]),(180/PI)*carg(YnComplex[i][numeroVariaveis+1]));
+          }
+        fprintf(arquivo,"\n");          
+        }
+      }
+    fclose(arquivo);
+    
+    }
+  
+}
+else if (tem==0){
+  printf("Sistema possui apenas Ponto de Operacao");
+  
+  exit(1);
+}
+
 
   return 0;
 }
