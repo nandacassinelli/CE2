@@ -294,14 +294,14 @@ else if (tipo=='Q') {
             Yn[netlist[i].a][numeroVariaveis+1]+=g;
             Yn[netlist[i].b][numeroVariaveis+1]-=g;
 
-      g=netlist[i].alfa*ge;
+      g=bjt[i].alfa*ge;
       
             Yn[netlist[i].a][netlist[i].b]+=g;
             Yn[netlist[i].b][netlist[i].c]+=g;
             Yn[netlist[i].a][netlist[i].c]-=g;
             Yn[netlist[i].b][netlist[i].b]-=g;
 
-      g=netlist[i].alfa*ie;
+      g=bjt[i].alfa*ie;
       
             Yn[netlist[i].a][numeroVariaveis+1]-=g;
             Yn[netlist[i].b][numeroVariaveis+1]+=g;
@@ -317,14 +317,14 @@ else if (tipo=='Q') {
             Yn[netlist[i].b][numeroVariaveis+1]-=g; //???
             Yn[netlist[i].c][numeroVariaveis+1]+=g; //???
 
-      g=netlist[i].alfar*gc;
+      g=bjt[i].alfar*gc;
       
             Yn[netlist[i].c][netlist[i].b]+=g;
             Yn[netlist[i].b][netlist[i].a]+=g;
             Yn[netlist[i].c][netlist[i].a]-=g;
             Yn[netlist[i].b][netlist[i].b]-=g;
 
-      g=netlist[i].alfar*ic;
+      g=bjt[i].alfar*ic;
       
             Yn[netlist[i].c][numeroVariaveis+1]-=g;
             Yn[netlist[i].b][numeroVariaveis+1]+=g;
@@ -357,7 +357,7 @@ else if (tipo=='Q') {
       /*Creversa diodo bc */
       if (VBC > 0.9)
         VBC = 0.9;
-      resistenciaDC = 1/((netlist[i].isbc*exp(vn/0.025))/netlist[i].vtbc);
+      resistenciaDC = 1/((bjt[i].isbc*exp(vn/0.025))/bjttbc);
       Yn[netlist[i].b][netlist[i].b]+=resistenciaDC;
       Yn[netlist[i].a][netlist[i].a]+=resistenciaDC;
       Yn[netlist[i].b][netlist[i].a]-=resistenciaDC;
@@ -366,7 +366,7 @@ else if (tipo=='Q') {
       /*Creversa diodo be */
       if (VBE > 0.9)
         VBE = 0.9;
-      resistenciaDC = 1/((netlist[i].isbe*exp(vn/0.025))/netlist[i].vtbe);
+      resistenciaDC = 1/((bjt[i].isbe*exp(vn/0.025))/bjt[i].vtbe);
       Yn[netlist[i].b][netlist[i].b]+=resistenciaDC;
       Yn[netlist[i].c][netlist[i].c]+=resistenciaDC;
       Yn[netlist[i].b][netlist[i].c]-=resistenciaDC;
@@ -415,14 +415,12 @@ int main(void)
       sscanf(p, "%10s%10s%lg",  noA,  noB, &netlist[nElementos -1].valor);
       if (elemento =='L') {
 	      indutor[nElementos -1].indutancia = netlist[nElementos -1].valor;
-        indutor[nElementos -1].id = nElementos -1;
         netlist[nElementos -1].valor = 1e-9; // valor para a analise DC (curto)
         printf("%s %s %s %g\n",  netlist[nElementos -1].nome,  noA,  noB,  indutor[nElementos -1].indutancia);
         nL++;
       }
       else if (elemento=='C') {
           capacitor[nElementos -1].capacitancia = netlist[nElementos -1].valor;
-          capacitor[nElementos -1].id = nElementos - 1;
           netlist[nElementos -1].valor = 1e9; // valor para a analise DC (aberto)
           printf("%s %s %s %g\n", netlist[nElementos -1].nome, noA, noB, capacitor[nElementos -1].capacitancia);
           nC++;
@@ -476,7 +474,6 @@ int main(void)
       bjt[nElementos -1].noc = netlist[nElementos - 1].a;
       bjt[nElementos -1].nob = netlist[nElementos - 1].b; 
       bjt[nElementos -1].noe = netlist[nElementos - 1].c;
-      bjt[nElementos -1].id = nElementos -1;
 
       netlist[nElementos - 1].cZerobe = 1e9; // valor para a analise dc
       netlist[nElementos - 1].cUmbe = 1e9;
