@@ -76,7 +76,7 @@ infoIndutor indutor[MAX_ELEMENTOS];
 infoCapacitor capacitor[MAX_ELEMENTOS];
 infoBJT bjt[MAX_ELEMENTOS];
 
-int numeroVariaveis, numeroNos, tem, nC, nL, nBJTs, nElementos, listaNos[MAX_NOS], contador, convergencia[MAX_NOS];
+int numeroVariaveis, fim, numeroNos, tem, nC, nL, nBJTs, nElementos, listaNos[MAX_NOS], contador, convergencia[MAX_NOS], L1,L2;
 
 char 
   escala[3],
@@ -87,7 +87,8 @@ char
   file[MAX_NOME_ARQUIVO];
 
 double pontos, freqInicial, freqFinal, Yn[MAX_NOS][MAX_NOS], g, variavelAtual[MAX_NOS], variavelProxima[MAX_NOS],
-       VC, VB, VE, VBC, VBE, VCE, gc, ge, g1, g2, g3, vMaxExp, vbcAux, vbeAux, ic, ie, i0, cbcdir, cbcrev, cbedir, cberev;
+       VC, VB, VE, VBC, VBE, VCE, gc, ge, g1, g2, g3, vMaxExp, vbcAux, vbeAux, ic, ie, i0, cbcdir, cbcrev, cbedir, cberev,
+       indutanciaMutua;
 
 FILE *arquivo;
 
@@ -122,6 +123,113 @@ int no(char *nome){
 
 }
 
+double sind (double ang)
+{
+    double t = sin( (ang/ 180.0) * PI );
+    if (fabs(t) > UM)
+        return (1.0);
+    if (fabs(t) < ZERO)
+        return (0.0);
+
+    return (t);
+}
+
+double cosd (double ang)
+{
+    double t = cos( (ang / 180.0) * PI );
+    if (fabs(t) > UM)
+        return (1.0);
+    //if ( t < -UM)
+      //  return (-1.0);
+    if (fabs(t) < ZERO)
+        return (0.0);
+
+    return cos( (ang / 180.0) * PI );
+}
+
+void trocaNome(){ //rotina que troca extensao de .net para .tab
+  do {n++;} while(nomearquivo[n]!='.');
+  memcpy(novonome, &nomearquivo[0],n);
+    novonome[n]='\0';
+  strcpy(novonome,strcat(novonome,".tab"));
+  printf("\nResultados escritos no arquivo %s",novonome);
+}
+
+int resolversistemaDC(void)
+{
+  int i,j,l,a;
+  double t, p;
+
+  for (i=1; i<=numeroVariaveis; i++) {
+    t=0.0;
+    a=i;
+    for (l=i; l<=numeroVariaveis; l++) {
+      if (fabs(Yn[l][i])>fabs(t)) {
+      a=l;
+      t=Yn[l][i];
+      }
+    }
+    if (i!=a) {
+      for (l=1; l<=numeroVariaveis+1; l++) {
+  p=Yn[i][l];
+  Yn[i][l]=Yn[a][l];
+  Yn[a][l]=p;
+      }
+    }
+    if (fabs(t)<TOLG) {
+      printf("Sistema DC singular\n");
+      return 1;
+    }
+    for (j=numeroVariaveis+1; j>0; j--) {  /* Basta j>i em vez de j>0 */
+      Yn[i][j]/= t;
+      p=Yn[i][j];
+      if (p!=0)  /* Evita operacoes com zero */
+        for (l=1; l<=numeroVariaveis; l++) {  
+    if (l!=i)
+      Yn[l][j]-=Yn[l][i]*p;
+        }
+    }
+  }
+  return 0;
+}
+
+int resolversistemaAC(void)
+{
+  int i,j,l,a;
+  double complex t, p;
+
+  for (i=1; i<=numeroVariaveis; i++) {
+    t=0.0 + 0.0 * I;
+    a=i;
+    for (l=i; l<=numeroVariaveis; l++) {
+      if (cabs(YnComplex[l][i])>cabs(t)) {
+      a=l;
+      t=YnComplex[l][i];
+      }
+    }
+    if (i!=a) {
+      for (l=1; l<=numeroVariaveis+1; l++) {
+  p=YnComplex[i][l];
+  YnComplex[i][l] = YnComplex[a][l];
+  YnComplex[a][l] = p;
+      }
+    }
+    if (cabs(t)<TOLG) {
+      printf("Sistema AC singular\n");
+      return 1;
+    }
+    for (j=numeroVariaveis+1; j>0; j--) {  /* Basta j>i em vez de j>0 */
+      YnComplex[i][j]/= t;
+      p=YnComplex[i][j];
+      if (cabs(p)!=0.0)  /* Evita operacoes com zero */
+        for (l=1; l<=numeroVariaveis; l++) {  
+    if (l!=i)
+      YnComplex[l][j] -= YnComplex[l][i]*p;
+        }
+    }
+  }
+  return 0;
+}
 
 void verificaConvergencia(void) { 
     int i;
@@ -147,7 +255,7 @@ void verificaConvergencia(void) {
       
       else if (contador % 1000 == 0)
       {  
-        if(i>numeroNos)
+        if(i > numeroNos)
           variavelAtual[i] = rand()%11 -5;
         else
           variavelAtual[i] = rand()%21 -10;
@@ -234,12 +342,12 @@ void montaEstampaDC(void) {
         }
 
         else if (tipo=='Q') {
-        VC = variavelAtual[netlist[i].a];
-        VB = variavelAtual[netlist[i].b];
-        VE = variavelAtual[netlist[i].c];
-        VBC = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
-        VBE = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
-        VCE = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
+          VC = variavelAtual[netlist[i].a];
+          VB = variavelAtual[netlist[i].b];
+          VE = variavelAtual[netlist[i].c];
+          VBC = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
+          VBE = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
+          VCE = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
 ;
 
         if (netlist[i].tipo=='N'){
@@ -254,8 +362,8 @@ void montaEstampaDC(void) {
           cbedir=(vbeAux>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
         }
         
-        else { /* PNP */
-          if (!tentativas && !iteracoes){
+        else {
+          if (contador == 0){
             bjt[i].isbe=-bjt[i].isbe;
             bjt[i].vtbe=-bjt[i].vtbe;
             bjt[i].isbc=-bjt[i].isbc;
@@ -275,7 +383,7 @@ void montaEstampaDC(void) {
         }
     
         /*DIODO BC  */
-        gc= (bjt[i].isbc/bjt[i].bjtvtbc)*exp(vbcAux/bjt[i].vtbc);
+        gc= (bjt[i].isbc/bjt[i].vtbc)*exp(vbcAux/bjt[i].vtbc);
         ic= bjt[i].isbc * (exp(vbcAux/bjt[i].vtbc)-1) - gc*vbcAux;
         /*DIODO BE  */
         ge= (bjt[i].isbe/bjt[i].vtbe)*exp(vbeAux/bjt[i].vtbe);
@@ -357,28 +465,137 @@ void montaEstampaDC(void) {
 
 
         /*Creversa diodo bc */
-        if (VBC > 0.9)
-          VBC = 0.9;
-        resistenciaDC = 1/((bjt[i].isbc*exp(VBC/0.025))/bjt[i].vtbc);
-        Yn[netlist[i].b][netlist[i].b]+=resistenciaDC;
-        Yn[netlist[i].a][netlist[i].a]+=resistenciaDC;
-        Yn[netlist[i].b][netlist[i].a]-=resistenciaDC;
-        Yn[netlist[i].a][netlist[i].b]-=resistenciaDC;
+        //if (VBC > 0.9)
+          //VBC = 0.9;
+        //1e9 = 1/((bjt[i].isbc*exp(VBC/0.025))/bjt[i].vtbc);
+        Yn[netlist[i].b][netlist[i].b]+=1e9;
+        Yn[netlist[i].a][netlist[i].a]+=1e9;
+        Yn[netlist[i].b][netlist[i].a]-=1e9;
+        Yn[netlist[i].a][netlist[i].b]-=1e9;
 
         /*Creversa diodo be */
-        if (VBE > 0.9)
-          VBE = 0.9;
-        resistenciaDC = 1/((bjt[i].isbe*exp(VBE/0.025))/bjt[i].vtbe);
-        Yn[netlist[i].b][netlist[i].b]+=resistenciaDC;
-        Yn[netlist[i].c][netlist[i].c]+=resistenciaDC;
-        Yn[netlist[i].b][netlist[i].c]-=resistenciaDC;
-        Yn[netlist[i].c][netlist[i].b]-=resistenciaDC;
+        //if (VBE > 0.9)
+          //VBE = 0.9;
+        //1e9 = 1/((bjt[i].isbe*exp(VBE/0.025))/bjt[i].vtbe);
+        Yn[netlist[i].b][netlist[i].b]+=1e9;
+        Yn[netlist[i].c][netlist[i].c]+=1e9;
+        Yn[netlist[i].b][netlist[i].c]-=1e9;
+        Yn[netlist[i].c][netlist[i].b]-=1e9;
       } // end of if 'Q'
 
   } // end of for
 
 } // end of montaEstampaDC
 
+void montaEstampaAC(void){
+    for (i=0; i<=numeroVariaveis+1; i++) {
+      for (j=0; j<=numeroVariaveis+1; j++)
+        YnComplex[i][j]=0.0 + 0.0*I;
+    }
+  linear = 0;
+  for (i=1; i<=nElementos; i++) {
+        tipo = netlist[i].nome[0];
+        if (tipo=='R') {
+          g=1/netlist[i].valor;
+          YnComplex[netlist[i].a][netlist[i].a]+=g;
+          YnComplex[netlist[i].b][netlist[i].b]+=g;
+          YnComplex[netlist[i].a][netlist[i].b]-=g;
+          YnComplex[netlist[i].b][netlist[i].a]-=g;
+        }
+        else if (tipo=='C' ) {//estampa do capacitor (resp em freq)    
+          netlist[i].valor=capacitor[i].capacitancia;
+          gComplex=2*PI*frequencia*capacitor[i].capacitancia*I;
+          YnComplex[netlist[i].a][netlist[i].a]+=gComplex;
+          YnComplex[netlist[i].b][netlist[i].b]+=gComplex;
+          YnComplex[netlist[i].a][netlist[i].b]-=gComplex;
+          YnComplex[netlist[i].b][netlist[i].a]-=gComplex;
+        }
+        else if (tipo=='L'){//estampa do indutor controlado a corrente (resp em freq)
+          netlist[i].valor= indutor[i].indutancia;
+          gComplex=2*PI*frequencia*indutor[i].indutancia*I;
+          YnComplex[netlist[i].a][netlist[i].x]+=1;
+          YnComplex[netlist[i].b][netlist[i].x]-=1;
+          YnComplex[netlist[i].x][netlist[i].a]-=1;
+          YnComplex[netlist[i].x][netlist[i].b]+=1;
+          YnComplex[netlist[i].x][netlist[i].x]+=gComplex;
+        }
+        else if (tipo=='G') {
+          g=netlist[i].valor;
+          YnComplex[netlist[i].a][netlist[i].c]+=g;
+          YnComplex[netlist[i].b][netlist[i].d]+=g;
+          YnComplex[netlist[i].a][netlist[i].d]-=g;
+          YnComplex[netlist[i].b][netlist[i].c]-=g;
+          
+        }
+        else if (tipo=='I') {
+            YnComplex[netlist[i].a][numeroVariaveis+1]-= netlist[i].modulo*cosd(netlist[i].fase) + netlist[i].modulo*sind(netlist[i].fase)*I;
+            YnComplex[netlist[i].b][numeroVariaveis+1]+= netlist[i].modulo*cosd(netlist[i].fase) + netlist[i].modulo*sind(netlist[i].fase)*I;
+    }
+        else if (tipo=='V') {
+            YnComplex[netlist[i].a][netlist[i].x]+=1;
+            YnComplex[netlist[i].b][netlist[i].x]-=1;
+            YnComplex[netlist[i].x][netlist[i].a]-=1;
+            YnComplex[netlist[i].x][netlist[i].b]+=1;
+            YnComplex[netlist[i].x][numeroVariaveis+1]-= (netlist[i].modulo*cosd(netlist[i].fase) + netlist[i].modulo*sind(netlist[i].fase)*I);
+      
+        
+    }
+        else if (tipo=='E') {
+          g=netlist[i].valor;
+          YnComplex[netlist[i].a][netlist[i].x]+=1;
+          YnComplex[netlist[i].b][netlist[i].x]-=1;
+          YnComplex[netlist[i].x][netlist[i].a]-=1;
+          YnComplex[netlist[i].x][netlist[i].b]+=1;
+          YnComplex[netlist[i].x][netlist[i].c]+=g;
+          YnComplex[netlist[i].x][netlist[i].d]-=g;
+        }
+        else if (tipo=='F') {
+          g=netlist[i].valor;
+          YnComplex[netlist[i].a][netlist[i].x]+=g;
+          YnComplex[netlist[i].b][netlist[i].x]-=g;
+          YnComplex[netlist[i].c][netlist[i].x]+=1;
+          YnComplex[netlist[i].d][netlist[i].x]-=1;
+          YnComplex[netlist[i].x][netlist[i].c]-=1;
+          YnComplex[netlist[i].x][netlist[i].d]+=1;
+        }
+        else if (tipo=='H') {
+          g=netlist[i].valor;
+          YnComplex[netlist[i].a][netlist[i].y]+=1;
+          YnComplex[netlist[i].b][netlist[i].y]-=1;
+          YnComplex[netlist[i].c][netlist[i].x]+=1;
+          YnComplex[netlist[i].d][netlist[i].x]-=1;
+          YnComplex[netlist[i].y][netlist[i].a]-=1;
+          YnComplex[netlist[i].y][netlist[i].b]+=1;
+          YnComplex[netlist[i].x][netlist[i].c]-=1;
+          YnComplex[netlist[i].x][netlist[i].d]+=1;
+          YnComplex[netlist[i].y][netlist[i].x]+=g;
+        }
+        else if (tipo=='O') {
+          YnComplex[netlist[i].a][netlist[i].x]+=1;
+          YnComplex[netlist[i].b][netlist[i].x]-=1;
+          YnComplex[netlist[i].x][netlist[i].c]+=1;
+          YnComplex[netlist[i].x][netlist[i].d]-=1;
+        }
+        else if (tipo=='K'){
+          fim = 0;
+
+          int indice;
+          for (indice = 1; indice <= nElementos && fim != 2; indice++){
+            if(strcmp(acoplamento[i].lA, netlist[indice].nome) == 0){
+                fim++;
+                L1=indice;
+            }
+            else if(strcmp(acoplamento[i].lB, netlist[indice].nome) == 0){
+                fim++;
+                L2=indice;
+            }
+          }
+          indutanciaMutua = netlist[i].valor*(sqrt(indutor[L1].indutancia*indutor[L2].indutancia));      
+          YnComplex[netlist[L1].x][netlist[L2].x]+=2*PI*frequencia*indutanciaMutua*I;
+          YnComplex[netlist[L2].x][netlist[L1].x]+=2*PI*frequencia*indutanciaMutua*I;
+        }
+      }
+}
 
 int main(void)
 {
@@ -503,7 +720,7 @@ int main(void)
   }
 
   numeroNos = numeroVariaveis;
-  char stringNumero[MAX_NOME], lista[MAX_NOS+1][MAX_NOME+2]; // PRECISA DO +1????????????????????????????????????????????W
+  char stringNumero[MAX_NOME], lista[MAX_NOS][MAX_NOME+2]; // PRECISA DO +1???????????????????????????????????????????
   for (i = 0; i < numeroVariaveis; i++){
     sprintf(stringNumero, "%u", listaNos[i]);
     strcpy(lista[i], stringNumero);
