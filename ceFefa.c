@@ -39,16 +39,15 @@ Comentario:    *<comentario>
 #define PI 3.14159265358979
 #define UM 0.999999999999999999999999999999999999999999
 #define ZERO 0.0000000000000000000000000000000000000001
-
+#define VMAX_DIODO 0.7
+#define FI_DIODO 0.6
 
 typedef struct infoIndutor {
   double indutancia;
-  int id; // indice do elemento na estrutura de netlist
 } infoIndutor;
 
 typedef struct infoCapacitor {
   double capacitancia;
-  int id;
 } infoCapacitor;
 
 
@@ -60,7 +59,6 @@ typedef struct infoBJT {
   int noc, nob, noe;
   char tipo[MAX_NOME];
   double alfa, alfar, isbc, vtbc, isbe, vtbe, va, cZerobe, cUmbe, cZerobc,cUmbc;
-  int id;
 } infoBJT;
 
 typedef struct infoElementos {
@@ -77,7 +75,7 @@ infoIndutor indutor[MAX_ELEMENTOS];
 infoCapacitor capacitor[MAX_ELEMENTOS];
 infoBJT bjt[MAX_ELEMENTOS];
 
-int numeroVariaveis, numeroNos, tem, nC, nL, nBJTs, nElementos, listaNos[MAX_NOS];
+int numeroVariaveis, numeroNos, tem, nC, nL, nBJTs, nElementos, listaNos[MAX_NOS], contador;
 
 char 
   escala[3],
@@ -87,7 +85,7 @@ char
   linha[MAX_CHAR_LINHA],
   file[MAX_NOME_ARQUIVO];
 
-double pontos, freqInicial, freqFinal, Yn[MAX_NOS][MAX_NOS], g;
+double pontos, freqInicial, freqFinal, Yn[MAX_NOS][MAX_NOS], g, variavelAtual, variavelProxima;
 FILE *arquivo;
 
 int no(char *nome){
@@ -120,6 +118,40 @@ int no(char *nome){
   return numeroNo;
 
 }
+
+
+void verificaConvergencia(void) { 
+    for(i = 1;i <= numeroVariaveis; i++) {
+      variavelProxima[i] = Yn[i][numeroVariaveis + 1];
+      if(contador % 1000 != 0){   
+        if(fabs(variavelProxima[i])>1 && fabs((variavelProxima[i]-variavelAtual[i])/variavelProxima[i])<1e-9){
+          convergencia[i]=1;
+          variavelAtual[i]=variavelProxima[i];
+          variavelProxima[i]=0;
+        }
+        else if(fabs(variavelProxima[i]) <= 1 && fabs(variavelProxima[i]-variavelAtual[i]) < 1e-9) {
+          convergencia[i]=1;
+          variavelAtual[i]=variavelProxima[i];
+          variavelProxima[i]=0;
+        }  
+        else {
+          convergencia[i]=0;
+          variavelAtual[i]=variavelProxima[i];
+          variavelProxima[i]=0;   
+        }
+      }
+      
+      else if (contador % 1000 == 0)
+      {  
+        if(i>nn)
+          variavelAtual[i] = rand()%11 -5;
+        else
+          variavelAtual[i] = rand()%21 -10;
+      }
+    }
+
+}
+
 
 void montaEstampaDC(void) {
   int i, j;
@@ -198,21 +230,283 @@ void montaEstampaDC(void) {
         }
 
         else if (tipo=='Q') {
-          g=netlist[i].valor;
-          Yn[netlist[i].a][netlist[i].y]+=1;
-          Yn[netlist[i].b][netlist[i].y]-=1;
-          Yn[netlist[i].c][netlist[i].x]+=1;
-          Yn[netlist[i].d][netlist[i].x]-=1;
-          Yn[netlist[i].y][netlist[i].a]-=1;
-          Yn[netlist[i].y][netlist[i].b]+=1;
-          Yn[netlist[i].x][netlist[i].c]-=1;
-          Yn[netlist[i].x][netlist[i].d]+=1;
-          Yn[netlist[i].y][netlist[i].x]+=g;
+//montaestampaDC
+
+else if (tipo=='Q') {
+      #define VC  (varAtual[netlist[i].a])
+      #define VB  (varAtual[netlist[i].b])
+      #define VE  (varAtual[netlist[i].c])
+      #define VBC (varAtual[netlist[i].b] - varAtual[netlist[i].a])
+      #define VBE (varAtual[netlist[i].b] - varAtual[netlist[i].c])
+      #define VCE (varAtual[netlist[i].a] - varAtual[netlist[i].c])
+      #define VMAX_DIODO 0.7
+      #define FI_DIODO 0.6
+
+      if (netlist[i].tipo=='N'){
+      vMaxExp=VMAX_DIODO;
+      vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
+      vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
+
+      cbcrev = (vbcAux>0.3)? netlist[i].cZerobc/pow(0.5,0.5):netlist[i].cZerobc/pow((1.0-(vbcAux/FI_DIODO)),0.5);
+      cbcdir=(vbcAux>0)? netlist[i].cUmbc*(exp(vbcAux/netlist[i].vtbc)-1):0;
+
+      cberev=(vbeAux>0.3)? netlist[i].cZerobe/pow(0.5,0.5):netlist[i].cZerobe/pow((1.0-(vbeAux/FI_DIODO)),0.5);
+      cbedir=(vbeAux>0)? netlist[i].cUmbe*(exp(vbeAux/netlist[i].vtbe)-1):0;
+      }
+      else { /* PNP */
+    if (!tentativas && !iteracoes){
+      bjt[i].isbe=-bjt[i].isbe;
+      bjt[i].vtbe=-bjt[i].vtbe;
+      bjt[i].isbc=-bjt[i].isbc;
+      bjt[i].vtbc=-bjt[i].vtbc;
+                        bjt[i].va=-bjt[i].va;
+    }
+    vMaxExp=-VMAX_DIODO;
+    vbcAux= ((VBC)<vMaxExp)? vMaxExp:(VBC);
+    vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
+
+    cbcrev=((-vbcAux)>0.3)? netlist[i].cZerobc/pow(0.5,0.5):netlist[i].cZerobc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
+    cbcdir=((-vbcAux)>0)? netlist[i].cUmbc*(exp(vbcAux/netlist[i].vtbc)-1):0;
+
+    cberev=((-vbeAux)>0.3)? netlist[i].cZerobe/pow(0.5,0.5):netlist[i].cZerobe/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
+    cbedir=((-vbeAux)>0)? netlist[i].cUmbe*(exp(vbeAux/netlist[i].vtbe)-1):0;
+      }
+     /*DIODO BC  */
+    gc= (netlist[i].isbc/netlist[i].vtbc)*exp(vbcAux/netlist[i].vtbc);
+    ic= netlist[i].isbc * (exp(vbcAux/netlist[i].vtbc)-1) - gc*vbcAux;
+     /*DIODO BE  */
+    ge= (netlist[i].isbe/netlist[i].vtbe)*exp(vbeAux/netlist[i].vtbe);
+    ie= netlist[i].isbe * (exp(vbeAux/netlist[i].vtbe)-1) - ge*vbeAux;
+     /*EARLY  */
+    g1=netlist[i].alfa*ge*VCE/netlist[i].va;
+    g2=-gc*VCE/netlist[i].va;
+    g3=(netlist[i].alfa*(ie+ge*VBE)-(ic+gc*VBC))/netlist[i].va;
+    i0=-(g1*VBE)-(g2*VBC);
+
+      g=gc;
+            Yn[netlist[i].a][netlist[i].a]+=g;
+            Yn[netlist[i].b][netlist[i].b]+=g;
+            Yn[netlist[i].a][netlist[i].b]-=g;
+            Yn[netlist[i].b][netlist[i].a]-=g;
+
+      g=ic;
+            Yn[netlist[i].a][numeroVariaveis+1]+=g;
+            Yn[netlist[i].b][numeroVariaveis+1]-=g;
+
+      g=netlist[i].alfa*ge;
+      
+            Yn[netlist[i].a][netlist[i].b]+=g;
+            Yn[netlist[i].b][netlist[i].c]+=g;
+            Yn[netlist[i].a][netlist[i].c]-=g;
+            Yn[netlist[i].b][netlist[i].b]-=g;
+
+      g=netlist[i].alfa*ie;
+      
+            Yn[netlist[i].a][numeroVariaveis+1]-=g;
+            Yn[netlist[i].b][numeroVariaveis+1]+=g;
+
+      g=ge;
+      
+            Yn[netlist[i].b][netlist[i].b]+=g;
+            Yn[netlist[i].c][netlist[i].c]+=g;
+            Yn[netlist[i].b][netlist[i].c]-=g;
+            Yn[netlist[i].c][netlist[i].b]-=g;
+
+      g=ie;
+            Yn[netlist[i].b][numeroVariaveis+1]-=g;
+            Yn[netlist[i].c][numeroVariaveis+1]+=g;
+
+      g=netlist[i].alfar*gc;
+      
+            Yn[netlist[i].c][netlist[i].b]+=g;
+            Yn[netlist[i].b][netlist[i].a]+=g;
+            Yn[netlist[i].c][netlist[i].a]-=g;
+            Yn[netlist[i].b][netlist[i].b]-=g;
+
+      g=netlist[i].alfar*ic;
+      
+            Yn[netlist[i].c][numeroVariaveis+1]-=g;
+            Yn[netlist[i].b][numeroVariaveis+1]+=g;
+
+      /*efeito early */
+      g=i0;
+            Yn[netlist[i].a][numeroVariaveis+1]-=g;
+            Yn[netlist[i].c][numeroVariaveis+1]+=g;
+
+      g=g1;
+            Yn[netlist[i].a][netlist[i].b]+=g;
+            Yn[netlist[i].c][netlist[i].c]+=g;
+            Yn[netlist[i].a][netlist[i].c]-=g;
+            Yn[netlist[i].c][netlist[i].b]-=g;
+
+      g=g2;
+            Yn[netlist[i].a][netlist[i].b]+=g;
+            Yn[netlist[i].c][netlist[i].a]+=g;
+            Yn[netlist[i].a][netlist[i].a]-=g;
+            Yn[netlist[i].c][netlist[i].b]-=g;
+
+      g=g3;
+            Yn[netlist[i].a][netlist[i].a]+=g;
+            Yn[netlist[i].c][netlist[i].c]+=g;
+            Yn[netlist[i].a][netlist[i].c]-=g;
+            Yn[netlist[i].c][netlist[i].a]-=g;
+
+
+
+      /*Creversa diodo bc */
+      if (VBC > 0.9)
+        VBC = 0.9;
+      resistenciaDC = 1/((netlist[i].isbc*exp(vn/0.025))/netlist[i].vtbc);
+      Yn[netlist[i].b][netlist[i].b]+=resistenciaDC;
+      Yn[netlist[i].a][netlist[i].a]+=resistenciaDC;
+      Yn[netlist[i].b][netlist[i].a]-=resistenciaDC;
+      Yn[netlist[i].a][netlist[i].b]-=resistenciaDC;
+
+      /*Creversa diodo be */
+      if (VBE > 0.9)
+        VBE = 0.9;
+      resistenciaDC = 1/((netlist[i].isbe*exp(vn/0.025))/netlist[i].vtbe);
+      Yn[netlist[i].b][netlist[i].b]+=resistenciaDC;
+      Yn[netlist[i].c][netlist[i].c]+=resistenciaDC;
+      Yn[netlist[i].b][netlist[i].c]-=resistenciaDC;
+      Yn[netlist[i].c][netlist[i].b]-=resistenciaDC;
+
+    }
         }
 
     }
   }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////qq
+/*
+double VC, VB, VE, VBC, VBE, VCE;
 
+
+VC  = (solucaoAnterior[netlist[i].a])
+VB  = (solucaoAnterior[netlist[i].b])
+VE  = (solucaoAnterior[netlist[i].c])
+VBC = (solucaoAnterior[netlist[i].b]-solucaoAnterior[netlist[i].a])
+VBE = (solucaoAnterior[netlist[i].b]-solucaoAnterior[netlist[i].c])
+VCE = (solucaoAnterior[netlist[i].a]-solucaoAnterior[netlist[i].c])
+
+void transistorBipolar (int indice) {
+  
+  if (netlist[indice].tipo[0]=='N'){
+    vMaxExp = VMAX_DIODO;
+    vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
+    vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
+  }
+  else {
+    if (!tentativas && !iteracoes){
+      netlist[indice].isbe=-netlist[indice].isbe;
+      netlist[indice].vtbe=-netlist[indice].vtbe;
+      netlist[indice].isbc=-netlist[indice].isbc;
+      netlist[indice].vtbc=-netlist[indice].vtbc;
+    }
+    vMaxExp=-VMAX_DIODO;
+    vbcAux= ((VBC)<vMaxExp)? vMaxExp:(VBC);
+    vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
+  } 
+}
+     /*DIODO BC  
+    gc= (netlist[indice].isbc/netlist[indice].vtbc)*exp(vbcAux/netlist[indice].vtbc);
+    ic= netlist[indice].isbc * (exp(vbcAux/netlist[i].vtbc)-1) - gc*vbcAux;
+    cbcrev=(vbcAux>0.3)? netlist[i].c0bc/pow(0.5,0.5):netlist[indice].c0bc/pow((1.0-(vbcAux/FI_DIODO)),0.5)   ;
+    cbcdir=(vbcAux>0)? netlist[indice].c1bc*(exp(vbcAux/netlist[indice].vtbc)-1):0;
+     /*DIODO BE  indice
+    ge= (netlist[i].isbe/netlist[indice].vtbe)*exp(vbeAux/netlist[i].vtbe);
+    ie= netlist[indice].isbe * (exp(vbeAux/netlist[indice].vtbe)-1) - ge*vbeAux;
+    cberev=(vbeAux>0.3)? netlist[indice].c0be/pow(0.5,0.5):netlist[i].c0be/pow((1.0-(vbeAux/FI_DIODO)),0.5);
+    cbedir=(VBE>0)? netlist[indice].c1be*(exp(vbeAux/netlist[i].vtbe)-1):0;
+     /*EARLY  
+    g1=netlist[i].alfa*ge*VCE/netlist[indice].va;
+    g2=-gc*VCE/netlist[indice].va;
+    g3=(netlist[indice].alfa*(ie+ge*VBE)-(ic+gc*VBC))/netlist[indice].va;
+    i0=-(g1*VBE)-(g2*VBC);
+
+    g=gc;
+    YnC[netlist[i].a][netlist[i].a]+=g;
+    YnC[netlist[i].b][netlist[i].b]+=g;
+    YnC[netlist[i].a][netlist[i].b]-=g;
+    YnC[netlist[i].b][netlist[i].a]-=g;
+
+    g=netlist[i].alfa*ge;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].b][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].b][netlist[i].b]-=g;
+
+    g=ge;
+    YnC[netlist[i].b][netlist[i].b]+=g;
+    YnC[netlist[i].c][netlist[i].c]+=g;
+    YnC[netlist[i].b][netlist[i].c]-=g;
+    YnC[netlist[i].c][netlist[i].b]-=g;
+
+    g=netlist[i].alfar*gc;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].b][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].b][netlist[i].b]-=g;
+
+
+    /*efeito early 
+
+    g=g1;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].c][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].c][netlist[i].b]-=g;
+
+    g=g2;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].c][netlist[i].a]+=g;
+    YnC[netlist[i].a][netlist[i].a]-=g;
+    YnC[netlist[i].c][netlist[i].b]-=g;
+
+    g=g3;
+    YnC[netlist[i].a][netlist[i].a]+=g;
+    YnC[netlist[i].c][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].c][netlist[i].a]-=g;
+
+    /*Creversa diodo bc 
+    gC=I*PI2*frequenciaInicial*cbcrev;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].a][netlist[i].a]+=gC;
+    YnC[netlist[i].b][netlist[i].a]-=gC;
+    YnC[netlist[i].a][netlist[i].b]-=gC;
+
+    /*Cdireta diodo bc 
+    gC=I*PI2*frequenciaInicial*cbcdir;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].a][netlist[i].a]+=gC;
+    YnC[netlist[i].b][netlist[i].a]-=gC;
+    YnC[netlist[i].a][netlist[i].b]-=gC;
+
+    /*Creversa diodo be 
+    gC=I*PI2*frequenciaInicial*cberev;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].c][netlist[i].c]+=gC;
+    YnC[netlist[i].b][netlist[i].c]-=gC;
+    YnC[netlist[i].c][netlist[i].b]-=gC;
+
+    /*Cdireta diodo be 
+    gC=I*PI2*frequenciaInicial*cbedir;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].c][netlist[i].c]+=gC;
+    YnC[netlist[i].b][netlist[i].c]-=gC;
+    YnC[netlist[i].c][netlist[i].b]-=gC;
+    }
+
+
+
+
+
+
+
+
+
+*/
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////qq
 
 int main(void)
 {
@@ -249,17 +543,17 @@ int main(void)
     if (elemento =='R' || elemento =='L' || elemento =='C') { // R, C, L <nome> <no1> <no2> <valor>
       sscanf(p, "%10s%10s%lg",  noA,  noB, &netlist[nElementos -1].valor);
       if (elemento =='L') {
-	      indutor[nL].indutancia = netlist[nElementos -1].valor;
-        indutor[nL].id = nElementos -1;
+	      indutor[nElementos -1].indutancia = netlist[nElementos -1].valor;
+        indutor[nElementos -1].id = nElementos -1;
         netlist[nElementos -1].valor = 1e-9; // valor para a analise DC (curto)
-        printf("%s %s %s %g\n",  netlist[nElementos -1].nome,  noA,  noB,  indutor[nL].indutancia);
+        printf("%s %s %s %g\n",  netlist[nElementos -1].nome,  noA,  noB,  indutor[nElementos -1].indutancia);
         nL++;
       }
       else if (elemento=='C') {
-          capacitor[nC].capacitancia = netlist[nElementos -1].valor;
-          capacitor[nC].id = nElementos - 1;
+          capacitor[nElementos -1].capacitancia = netlist[nElementos -1].valor;
+          capacitor[nElementos -1].id = nElementos - 1;
           netlist[nElementos -1].valor = 1e9; // valor para a analise DC (aberto)
-          printf("%s %s %s %g\n", netlist[nElementos -1].nome, noA, noB, capacitor[nC].capacitancia);
+          printf("%s %s %s %g\n", netlist[nElementos -1].nome, noA, noB, capacitor[nElementos -1].capacitancia);
           nC++;
       }
       else 
@@ -301,17 +595,17 @@ int main(void)
     else if (elemento=='Q') { // Q<nome> <noc> <nob> <noe> <tipo> <alfa> <alfar> <Isbe> <VTbe> <Isbc> <VTbc> <VA> <C0be> <C1be> <C0bc> <C1bc>
       //srand(time(NULL));
       nBJTs++;
-      sscanf(p, "%10s%10s%10s%10s%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg", noA, noB, noC, bjt[nBJTs - 1].tipo, &bjt[nBJTs - 1].alfa, &bjt[nBJTs - 1].alfar, &bjt[nBJTs - 1].isbe, &bjt[nBJTs - 1].vtbe, &bjt[nBJTs - 1].isbc, &bjt[nBJTs - 1].vtbc, &bjt[nBJTs - 1].va, &bjt[nBJTs - 1].cZerobe, &bjt[nBJTs - 1].cUmbe, &bjt[nBJTs - 1].cZerobc, &bjt[nBJTs - 1].cUmbc);
-      printf("%10s %10s %10s %10s %10s %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", netlist[nElementos - 1].nome, noA, noB, noC, bjt[nBJTs - 1].tipo, bjt[nBJTs - 1].alfa, bjt[nBJTs - 1].alfar, bjt[nBJTs - 1].isbe, bjt[nBJTs - 1].vtbe, bjt[nBJTs - 1].isbc, bjt[nBJTs - 1].vtbc, bjt[nBJTs - 1].va, bjt[nBJTs - 1].cZerobe, bjt[nBJTs - 1].cUmbe, bjt[nBJTs - 1].cZerobc, bjt[nBJTs - 1].cUmbc);
-      strcpy(netlist[nElementos - 1].tipo, bjt[nBJTs - 1].tipo);
+      sscanf(p, "%10s%10s%10s%10s%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg", noA, noB, noC, bjt[nElementos -1].tipo, &bjt[nElementos -1].alfa, &bjt[nElementos -1].alfar, &bjt[nElementos -1].isbe, &bjt[nElementos -1].vtbe, &bjt[nElementos -1].isbc, &bjt[nElementos - 1].vtbc, &bjt[nElementos - 1].va, &bjt[nElementos - 1].cZerobe, &bjt[nElementos - 1].cUmbe, &bjt[nElementos - 1].cZerobc, &bjt[nElementos - 1].cUmbc);
+      printf("%10s %10s %10s %10s %10s %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", netlist[nElementos - 1].nome, noA, noB, noC, bjt[nElementos -1].tipo, bjt[nElementos -1].alfa, bjt[nElementos -1].alfar, bjt[nElementos -1].isbe, bjt[nElementos - 1].vtbe, bjt[nElementos - 1].isbc, bjt[nElementos - 1].vtbc, bjt[nElementos - 1].va, bjt[nElementos - 1].cZerobe, bjt[nElementos - 1].cUmbe, bjt[nElementos - 1].cZerobc, bjt[nElementos - 1].cUmbc);
+      strcpy(netlist[nElementos - 1].tipo, bjt[nElementos - 1].tipo);
       netlist[nElementos - 1].a = no(noA);
       netlist[nElementos - 1].b = no(noB);
       netlist[nElementos - 1].c = no(noC);
     
-      bjt[nBJTs - 1].noc = netlist[nElementos - 1].a;
-      bjt[nBJTs - 1].nob = netlist[nElementos - 1].b; 
-      bjt[nBJTs - 1].noe = netlist[nElementos - 1].c;
-      bjt[nBJTs - 1].id = nElementos -1;
+      bjt[nElementos -1].noc = netlist[nElementos - 1].a;
+      bjt[nElementos -1].nob = netlist[nElementos - 1].b; 
+      bjt[nElementos -1].noe = netlist[nElementos - 1].c;
+      bjt[nElementos -1].id = nElementos -1;
 
       netlist[nElementos - 1].cZerobe = 1e9; // valor para a analise dc
       netlist[nElementos - 1].cUmbe = 1e9;
