@@ -599,10 +599,10 @@ void montaEstampaAC(void){
       vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
       vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
       cbcrev=(vbcAux>0.3)? netlist[i].cZerobc/pow(0.5,0.5):netlist[i].cZerobc/pow((1.0-(vbcAux/FI_DIODO)),0.5)   ;
-      cbcdir=(vbcAux>0)? netlist[i].cUmbc*(exp(vbcAux/netlist[i].vtbc)-1):0;
+      cbcdir=(vbcAux>0)? bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc)-1):0;
 
-      cberev=(vbeAux>0.3)? netlist[i].cZerobe/pow(0.5,0.5):netlist[i].cZerobe/pow((1.0-(vbeAux/FI_DIODO)),0.5);
-      cbedir=(vbeAux>0)? netlist[i].cUmbe*(exp(vbeAux/netlist[i].vtbe)-1):0;
+      cberev=(vbeAux>0.3)? bjt[i].cZerobe/pow(0.5,0.5):bjt[i].cZerobe/pow((1.0-(vbeAux/FI_DIODO)),0.5);
+      cbedir=(vbeAux>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
       }
       else { /* PNP */
     vMaxExp=-VMAX_DIODO;
@@ -610,95 +610,95 @@ void montaEstampaAC(void){
     vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
 
     cbcrev=((-vbcAux)>0.3)? netlist[i].cZerobc/pow(0.5,0.5):netlist[i].cZerobc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
-    cbcdir=((-vbcAux)>0)? netlist[i].cUmbc*(exp(vbcAux/netlist[i].vtbc)-1):0;
+    cbcdir=((-vbcAux)>0)? bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc)-1):0;
 
-    cberev=((-vbeAux)>0.3)? netlist[i].cZerobe/pow(0.5,0.5):netlist[i].cZerobe/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
-    cbedir=((-vbeAux)>0)? netlist[i].cUmbe*(exp(vbeAux/netlist[i].vtbe)-1):0;
+    cberev=((-vbeAux)>0.3)? bjt[i].cZerobe/pow(0.5,0.5):bjt[i].cZerobe/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
+    cbedir=((-vbeAux)>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
       }
      /*DIODO BC  */
-    gc= (netlist[i].isbc/netlist[i].vtbc)*exp(vbcAux/netlist[i].vtbc);
-    ic= netlist[i].isbc * (exp(vbcAux/netlist[i].vtbc)-1) - gc*vbcAux;
+    gc= (bjt[i].isbc/bjt[i].vtbc)*exp(vbcAux/bjt[i].vtbc);
+    ic= bjt[i].isbc * (exp(vbcAux/bjt[i].vtbc)-1) - gc*vbcAux;
      /*DIODO BE  */
-    ge= (netlist[i].isbe/netlist[i].vtbe)*exp(vbeAux/netlist[i].vtbe);
-    ie= netlist[i].isbe * (exp(vbeAux/netlist[i].vtbe)-1) - ge*vbeAux;
+    ge= (bjt[i].isbe/bjt[i].vtbe)*exp(vbeAux/bjt[i].vtbe);
+    ie= bjt[i].isbe * (exp(vbeAux/bjt[i].vtbe)-1) - ge*vbeAux;
      /*EARLY  */
-    g1=netlist[i].alfa*ge*VCE/netlist[i].va;
-    g2=-gc*VCE/netlist[i].va;
-    g3=(netlist[i].alfa*(ie+ge*VBE)-(ic+gc*VBC))/netlist[i].va;
+    g1=bjt[i].alfa*ge*VCE/bjt[i].va;
+    g2=-gc*VCE/bjt[i].va;
+    g3=(bjt[i].alfa*(ie+ge*VBE)-(ic+gc*VBC))/bjt[i].va;
     i0=-(g1*VBE)-(g2*VBC);
 
     g=gc;
-    YnC[netlist[i].a][netlist[i].a]+=g;
-    YnC[netlist[i].b][netlist[i].b]+=g;
-    YnC[netlist[i].a][netlist[i].b]-=g;
-    YnC[netlist[i].b][netlist[i].a]-=g;
+    YnComplex[netlist[i].a][netlist[i].a]+=g;
+    YnComplex[netlist[i].b][netlist[i].b]+=g;
+    YnComplex[netlist[i].a][netlist[i].b]-=g;
+    YnComplex[netlist[i].b][netlist[i].a]-=g;
 
-    g=netlist[i].alfa*ge;
-    YnC[netlist[i].a][netlist[i].b]+=g;
-    YnC[netlist[i].b][netlist[i].c]+=g;
-    YnC[netlist[i].a][netlist[i].c]-=g;
-    YnC[netlist[i].b][netlist[i].b]-=g;
+    g=bjt[i].alfa*ge;
+    YnComplex[netlist[i].a][netlist[i].b]+=g;
+    YnComplex[netlist[i].b][netlist[i].c]+=g;
+    YnComplex[netlist[i].a][netlist[i].c]-=g;
+    YnComplex[netlist[i].b][netlist[i].b]-=g;
 
     g=ge;
-    YnC[netlist[i].b][netlist[i].b]+=g;
-    YnC[netlist[i].c][netlist[i].c]+=g;
-    YnC[netlist[i].b][netlist[i].c]-=g;
-    YnC[netlist[i].c][netlist[i].b]-=g;
+    YnComplex[netlist[i].b][netlist[i].b]+=g;
+    YnComplex[netlist[i].c][netlist[i].c]+=g;
+    YnComplex[netlist[i].b][netlist[i].c]-=g;
+    YnComplex[netlist[i].c][netlist[i].b]-=g;
 
-    g=netlist[i].alfar*gc;
-    YnC[netlist[i].a][netlist[i].b]+=g;
-    YnC[netlist[i].b][netlist[i].c]+=g;
-    YnC[netlist[i].a][netlist[i].c]-=g;
-    YnC[netlist[i].b][netlist[i].b]-=g;
+    g=bjt[i].alfar*gc;
+    YnComplex[netlist[i].a][netlist[i].b]+=g;
+    YnComplex[netlist[i].b][netlist[i].c]+=g;
+    YnComplex[netlist[i].a][netlist[i].c]-=g;
+    YnComplex[netlist[i].b][netlist[i].b]-=g;
 
 
     /*efeito early */
 
     g=g1;
-    YnC[netlist[i].a][netlist[i].b]+=g;
-    YnC[netlist[i].c][netlist[i].c]+=g;
-    YnC[netlist[i].a][netlist[i].c]-=g;
-    YnC[netlist[i].c][netlist[i].b]-=g;
+    YnComplex[netlist[i].a][netlist[i].b]+=g;
+    YnComplex[netlist[i].c][netlist[i].c]+=g;
+    YnComplex[netlist[i].a][netlist[i].c]-=g;
+    YnComplex[netlist[i].c][netlist[i].b]-=g;
 
     g=g2;
-    YnC[netlist[i].a][netlist[i].b]+=g;
-    YnC[netlist[i].c][netlist[i].a]+=g;
-    YnC[netlist[i].a][netlist[i].a]-=g;
-    YnC[netlist[i].c][netlist[i].b]-=g;
+    YnComplex[netlist[i].a][netlist[i].b]+=g;
+    YnComplex[netlist[i].c][netlist[i].a]+=g;
+    YnComplex[netlist[i].a][netlist[i].a]-=g;
+    YnComplex[netlist[i].c][netlist[i].b]-=g;
 
     g=g3;
-    YnC[netlist[i].a][netlist[i].a]+=g;
-    YnC[netlist[i].c][netlist[i].c]+=g;
-    YnC[netlist[i].a][netlist[i].c]-=g;
-    YnC[netlist[i].c][netlist[i].a]-=g;
+    YnComplex[netlist[i].a][netlist[i].a]+=g;
+    YnComplex[netlist[i].c][netlist[i].c]+=g;
+    YnComplex[netlist[i].a][netlist[i].c]-=g;
+    YnComplex[netlist[i].c][netlist[i].a]-=g;
 
     /*Creversa diodo bc */
-    gC=I*PI2*frequenciaInicial*cbcrev;
-    YnC[netlist[i].b][netlist[i].b]+=gC;
-    YnC[netlist[i].a][netlist[i].a]+=gC;
-    YnC[netlist[i].b][netlist[i].a]-=gC;
-    YnC[netlist[i].a][netlist[i].b]-=gC;
+    gComplex=I*PI*2*freqInicial*cbcrev;
+    YnComplex[netlist[i].b][netlist[i].b]+=gComplex;
+    YnComplex[netlist[i].a][netlist[i].a]+=gComplex;
+    YnComplex[netlist[i].b][netlist[i].a]-=gComplex;
+    YnComplex[netlist[i].a][netlist[i].b]-=gComplex;
 
     /*Cdireta diodo bc */
-    gC=I*PI2*frequenciaInicial*cbcdir;
-    YnC[netlist[i].b][netlist[i].b]+=gC;
-    YnC[netlist[i].a][netlist[i].a]+=gC;
-    YnC[netlist[i].b][netlist[i].a]-=gC;
-    YnC[netlist[i].a][netlist[i].b]-=gC;
+    gComplex=I*PI*2*freqInicial*cbcdir;
+    YnComplex[netlist[i].b][netlist[i].b]+=gComplex;
+    YnComplex[netlist[i].a][netlist[i].a]+=gComplex;
+    YnComplex[netlist[i].b][netlist[i].a]-=gComplex;
+    YnComplex[netlist[i].a][netlist[i].b]-=gComplex;
 
     /*Creversa diodo be */
-    gC=I*PI2*frequenciaInicial*cberev;
-    YnC[netlist[i].b][netlist[i].b]+=gC;
-    YnC[netlist[i].c][netlist[i].c]+=gC;
-    YnC[netlist[i].b][netlist[i].c]-=gC;
-    YnC[netlist[i].c][netlist[i].b]-=gC;
+    gComplex=I*PI*2*freqInicial*cberev;
+    YnComplex[netlist[i].b][netlist[i].b]+=gComplex;
+    YnComplex[netlist[i].c][netlist[i].c]+=gComplex;
+    YnComplex[netlist[i].b][netlist[i].c]-=gComplex;
+    YnComplex[netlist[i].c][netlist[i].b]-=gComplex;
 
     /*Cdireta diodo be */
-    gC=I*PI2*frequenciaInicial*cbedir;
-    YnC[netlist[i].b][netlist[i].b]+=gC;
-    YnC[netlist[i].c][netlist[i].c]+=gC;
-    YnC[netlist[i].b][netlist[i].c]-=gC;
-    YnC[netlist[i].c][netlist[i].b]-=gC;
+    gComplex=I*PI*2*freqInicial*cbedir;
+    YnComplex[netlist[i].b][netlist[i].b]+=gComplex;
+    YnComplex[netlist[i].c][netlist[i].c]+=gComplex;
+    YnComplex[netlist[i].b][netlist[i].c]-=gComplex;
+    YnComplex[netlist[i].c][netlist[i].b]-=gComplex;
 
       } // end if tipo = 'Q'
     }
