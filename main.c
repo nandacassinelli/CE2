@@ -154,6 +154,8 @@ double cosd (double ang)
     return cos( (ang / 180.0) * PI );
 }
 
+
+
 void trocaNome(){ //rotina que troca extensao de .net para .tab
   int n = 0;
   do {n++;} while(file[n]!='.');
@@ -168,17 +170,17 @@ int resolverSistemaDC(void)
   int i,j,l,a;
   double t, p;
 
-  for (i=1; i<=numeroVariaveis; i++) {
+  for (i=0; i<numeroVariaveis; i++) {
     t=0.0;
     a=i;
-    for (l=i; l<=numeroVariaveis; l++) {
+    for (l=i; l<numeroVariaveis; l++) {
       if (fabs(Yn[l][i])>fabs(t)) {
       a=l;
       t=Yn[l][i];
       }
     }
     if (i!=a) {
-      for (l=1; l<=numeroVariaveis+1; l++) {
+      for (l=0; l<numeroVariaveis+1; l++) {
           p=Yn[i][l];
           Yn[i][l]=Yn[a][l];
           Yn[a][l]=p;
@@ -192,7 +194,7 @@ int resolverSistemaDC(void)
       Yn[i][j]/= t;
       p=Yn[i][j];
       if (p!=0)  /* Evita operacoes com zero */
-        for (l=1; l<=numeroVariaveis; l++) {
+        for (l=0; l<numeroVariaveis; l++) {
     if (l!=i)
       Yn[l][j]-=Yn[l][i]*p;
         }
@@ -206,7 +208,7 @@ int resolversistemaAC(void)
   int i,j,l,a;
   double complex t, p;
 
-  for (i=1; i<=numeroVariaveis; i++) {
+  for (i=0; i<numeroVariaveis; i++) {
     t=0.0 + 0.0 * I;
     a=i;
     for (l=i; l<=numeroVariaveis; l++) {
@@ -216,7 +218,7 @@ int resolversistemaAC(void)
       }
     }
     if (i!=a) {
-      for (l=1; l<=numeroVariaveis+1; l++) {
+      for (l=0; l<numeroVariaveis+1; l++) {
   p=YnComplex[i][l];
   YnComplex[i][l] = YnComplex[a][l];
   YnComplex[a][l] = p;
@@ -230,7 +232,7 @@ int resolversistemaAC(void)
       YnComplex[i][j]/= t;
       p=YnComplex[i][j];
       if (cabs(p)!=0.0)  /* Evita operacoes com zero */
-        for (l=1; l<=numeroVariaveis; l++) {
+        for (l=0; l<numeroVariaveis; l++) {
     if (l!=i)
       YnComplex[l][j] -= YnComplex[l][i]*p;
         }
@@ -241,7 +243,7 @@ int resolversistemaAC(void)
 
 void verificaConvergencia(void) {
     int i;
-    for(i = 1;i <= numeroVariaveis; i++) {
+    for(i = 0;i < numeroVariaveis; i++) {
       variavelProxima[i] = 0;
       variavelProxima[i] = Yn[i][numeroVariaveis + 1];
       if(contador % 1000 != 0){
@@ -492,7 +494,7 @@ void montaEstampaAC(void){
         YnComplex[i][j]=0.0 + 0.0*I;
     }
   nBJTs = 0;
-  for (i=1; i<=nElementos; i++) {
+  for (i=0; i<nElementos; i++) {
         tipo = netlist[i].nome[0];
         if (tipo=='R') {
           g=1/netlist[i].valor;
@@ -579,7 +581,7 @@ void montaEstampaAC(void){
           fim = 0;
 
           int indice;
-          for (indice = 1; indice <= nElementos && fim != 2; indice++){
+          for (indice = 0; indice < nElementos && fim != 2; indice++){
             if(strcmp(acoplamento[i].lA, netlist[indice].nome) == 0){
                 fim++;
                 L1=indice;
@@ -899,7 +901,7 @@ int main(void)
 
     verificaConvergencia();
 
-    for (k = 1; (k <=numeroVariaveis)&&(k != -1);){
+    for (k = 0; (k < numeroVariaveis)&&(k != -1);){
     if(convergencia[k]==1){k++;}
     else{k = -1;}
   }
@@ -916,14 +918,14 @@ int main(void)
   printf("%d iteracoes foram realizadas.\n",contador);
   contador=0;
   printf("%d Elementos nao lineares\n",nBJTs);
-  for(i=1;i<=nBJTs;i++){
-    for(j = 1; j <=numeroVariaveis; j++){
+  for(i=0;i<nBJTs;i++){
+    for(j = 0; j < numeroVariaveis; j++){
     if (convergencia[j] == 0){contador++;}
       }
   }
 
    if(nBJTs !=0){
-    for(i=1;i<=numeroVariaveis;i++)
+    for(i=0;i<numeroVariaveis;i++)
       {printf("Convergencia na variavel %d : %d\n",i,convergencia[i]);}
     }
 
@@ -934,7 +936,7 @@ int main(void)
     printf("Solucao do Ponto de Operacao:\n");
 
   strcpy(txt,"Tensao");
-  for (i=1; i<=numeroVariaveis; i++) {
+  for (i=0; i<numeroVariaveis; i++) {
     if (i==numeroNos+1) strcpy(txt,"Corrente");
     printf("%s %s: %g\n",txt,lista[i],Yn[i][numeroVariaveis+1]);
   }
@@ -957,7 +959,7 @@ int main(void)
 
   arquivo = fopen(novonome, "w");
   fprintf(arquivo,"f ");
-  for (i=1; i<=numeroVariaveis; i++)
+  for (i=0; i<numeroVariaveis; i++)
     fprintf(arquivo,"%sm %sf ",lista[i],lista[i]);
   fprintf(arquivo,"\n");
 
@@ -971,7 +973,7 @@ int main(void)
             resolversistemaAC();
 
       fprintf(arquivo,"%g ",frequencia);
-      for (i=1; i<=numeroVariaveis; i++) {
+      for (i=0; i<numeroVariaveis; i++) {
           fprintf(arquivo,"%g %g ",cabs(YnComplex[i][numeroVariaveis+1]),(180/PI)*carg(YnComplex[i][numeroVariaveis+1]));
         }
       fprintf(arquivo,"\n");
@@ -988,7 +990,7 @@ int main(void)
       pontos=1;
     arquivo = fopen(novonome, "w");
     fprintf(arquivo,"f ");
-    for (i=1; i<=numeroVariaveis; i++)
+    for (i=0; i<numeroVariaveis; i++)
     fprintf(arquivo,"%sm %sf ",lista[i],lista[i]);
     fprintf(arquivo,"\n");
 
@@ -1002,7 +1004,7 @@ int main(void)
           resolversistemaAC();
 
           fprintf(arquivo,"%g ",frequencia);
-          for (i=1; i<=numeroVariaveis; i++)
+          for (i=0; i<numeroVariaveis; i++)
             fprintf(arquivo,"%g %g ",cabs(YnComplex[i][numeroVariaveis+1]),(180/PI)*carg(YnComplex[i][numeroVariaveis+1]));
           fprintf(arquivo,"\n");
       }
@@ -1016,7 +1018,7 @@ int main(void)
       passo=1.0/(pontos-1.0);
       arquivo = fopen(novonome, "w");
       fprintf(arquivo,"f ");
-      for (i=1; i<=numeroVariaveis; i++)
+      for (i=0; i<numeroVariaveis; i++)
         fprintf(arquivo,"%sm %sf ",lista[i],lista[i]);
       fprintf(arquivo,"\n");
 
@@ -1030,7 +1032,7 @@ int main(void)
             resolversistemaAC();
 
         fprintf(arquivo,"%g ",frequencia);
-        for (i=1; i<=numeroVariaveis; i++) {
+        for (i=0; i<numeroVariaveis; i++) {
             fprintf(arquivo,"%g %g ",cabs(YnComplex[i][numeroVariaveis+1]),(180/PI)*carg(YnComplex[i][numeroVariaveis+1]));
           }
         fprintf(arquivo,"\n");
