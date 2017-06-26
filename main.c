@@ -598,22 +598,22 @@ void montaEstampaAC(void){
       vMaxExp=VMAX_DIODO;
       vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
       vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
-      cbcrev=(vbcAux>0.3)? netlist[i].c0bc/pow(0.5,0.5):netlist[i].c0bc/pow((1.0-(vbcAux/FI_DIODO)),0.5)   ;
-      cbcdir=(vbcAux>0)? netlist[i].c1bc*(exp(vbcAux/netlist[i].vtbc)-1):0;
+      cbcrev=(vbcAux>0.3)? netlist[i].cZerobc/pow(0.5,0.5):netlist[i].cZerobc/pow((1.0-(vbcAux/FI_DIODO)),0.5)   ;
+      cbcdir=(vbcAux>0)? netlist[i].cUmbc*(exp(vbcAux/netlist[i].vtbc)-1):0;
 
-      cberev=(vbeAux>0.3)? netlist[i].c0be/pow(0.5,0.5):netlist[i].c0be/pow((1.0-(vbeAux/FI_DIODO)),0.5);
-      cbedir=(vbeAux>0)? netlist[i].c1be*(exp(vbeAux/netlist[i].vtbe)-1):0;
+      cberev=(vbeAux>0.3)? netlist[i].cZerobe/pow(0.5,0.5):netlist[i].cZerobe/pow((1.0-(vbeAux/FI_DIODO)),0.5);
+      cbedir=(vbeAux>0)? netlist[i].cUmbe*(exp(vbeAux/netlist[i].vtbe)-1):0;
       }
       else { /* PNP */
     vMaxExp=-VMAX_DIODO;
     vbcAux= ((VBC)<vMaxExp)? vMaxExp:(VBC);
     vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
 
-    cbcrev=((-vbcAux)>0.3)? netlist[i].c0bc/pow(0.5,0.5):netlist[i].c0bc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
-    cbcdir=((-vbcAux)>0)? netlist[i].c1bc*(exp(vbcAux/netlist[i].vtbc)-1):0;
+    cbcrev=((-vbcAux)>0.3)? netlist[i].cZerobc/pow(0.5,0.5):netlist[i].cZerobc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
+    cbcdir=((-vbcAux)>0)? netlist[i].cUmbc*(exp(vbcAux/netlist[i].vtbc)-1):0;
 
-    cberev=((-vbeAux)>0.3)? netlist[i].c0be/pow(0.5,0.5):netlist[i].c0be/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
-    cbedir=((-vbeAux)>0)? netlist[i].c1be*(exp(vbeAux/netlist[i].vtbe)-1):0;
+    cberev=((-vbeAux)>0.3)? netlist[i].cZerobe/pow(0.5,0.5):netlist[i].cZerobe/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
+    cbedir=((-vbeAux)>0)? netlist[i].cUmbe*(exp(vbeAux/netlist[i].vtbe)-1):0;
       }
      /*DIODO BC  */
     gc= (netlist[i].isbc/netlist[i].vtbc)*exp(vbcAux/netlist[i].vtbc);
