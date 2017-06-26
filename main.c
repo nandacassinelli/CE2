@@ -467,21 +467,12 @@ void montaEstampaDC(void) {
             Yn[netlist[i].a][netlist[i].c]-=g;
             Yn[netlist[i].c][netlist[i].a]-=g;
 
-
-
-        /*Creversa diodo bc */
-        //if (VBC > 0.9)
-          //VBC = 0.9;
-        //1e9 = 1/((bjt[i].isbc*exp(VBC/0.025))/bjt[i].vtbc);
+        // capacitores em DC
         Yn[netlist[i].b][netlist[i].b]+=1e9;
         Yn[netlist[i].a][netlist[i].a]+=1e9;
         Yn[netlist[i].b][netlist[i].a]-=1e9;
         Yn[netlist[i].a][netlist[i].b]-=1e9;
 
-        /*Creversa diodo be */
-        //if (VBE > 0.9)
-          //VBE = 0.9;
-        //1e9 = 1/((bjt[i].isbe*exp(VBE/0.025))/bjt[i].vtbe);
         Yn[netlist[i].b][netlist[i].b]+=1e9;
         Yn[netlist[i].c][netlist[i].c]+=1e9;
         Yn[netlist[i].b][netlist[i].c]-=1e9;
@@ -602,7 +593,139 @@ void montaEstampaAC(void){
           YnComplex[netlist[L1].x][netlist[L2].x]+=2*PI*frequencia*indutanciaMutua*I;
           YnComplex[netlist[L2].x][netlist[L1].x]+=2*PI*frequencia*indutanciaMutua*I;
         }
-      }
+                else if (tipo=='Q') {
+          VC = variavelAtual[netlist[i].a];
+          VB = variavelAtual[netlist[i].b];
+          VE = variavelAtual[netlist[i].c];
+          VBC = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
+          VBE = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
+          VCE = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
+
+        if ((int) netlist[i].tipo=='N'){
+          vMaxExp=VMAX_DIODO;
+          vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
+          vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
+
+          cbcrev = (vbcAux>0.3)? bjt[i].cZerobc/pow(0.5,0.5):bjt[i].cZerobc/pow((1.0-(vbcAux/FI_DIODO)),0.5);
+          cbcdir=(vbcAux>0)? bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc)-1):0;
+
+          cberev=(vbeAux>0.3)? bjt[i].cZerobe/pow(0.5,0.5):bjt[i].cZerobe/pow((1.0-(vbeAux/FI_DIODO)),0.5);
+          cbedir=(vbeAux>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
+        }
+
+        else {
+          if (contador == 0){
+            bjt[i].isbe=-bjt[i].isbe;
+            bjt[i].vtbe=-bjt[i].vtbe;
+            bjt[i].isbc=-bjt[i].isbc;
+            bjt[i].vtbc=-bjt[i].vtbc;
+            bjt[i].va=-bjt[i].va;
+          }
+
+          vMaxExp=-VMAX_DIODO;
+          vbcAux= ((VBC)<vMaxExp)? vMaxExp:(VBC);
+          vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
+
+          cbcrev=((-vbcAux)>0.3)? bjt[i].cZerobc/pow(0.5,0.5):bjt[i].cZerobc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
+          cbcdir=((-vbcAux)>0)? bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc)-1):0;
+
+          cberev=((-vbeAux)>0.3)? bjt[i].cZerobe/pow(0.5,0.5):bjt[i].cZerobe/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
+          cbedir=((-vbeAux)>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
+        }
+
+        /*DIODO BC  */
+        gc= (bjt[i].isbc/bjt[i].vtbc)*exp(vbcAux/bjt[i].vtbc);
+        ic= bjt[i].isbc * (exp(vbcAux/bjt[i].vtbc)-1) - gc*vbcAux;
+        /*DIODO BE  */
+        ge= (bjt[i].isbe/bjt[i].vtbe)*exp(vbeAux/bjt[i].vtbe);
+        ie= bjt[i].isbe * (exp(vbeAux/bjt[i].vtbe)-1) - ge*vbeAux;
+        /*EARLY  */
+        g1=bjt[i].alfa*ge*VCE/bjt[i].va;
+        g2=-gc*VCE/bjt[i].va;
+        g3=(bjt[i].alfa*(ie+ge*VBE)-(ic+gc*VBC))/bjt[i].va;
+        i0=-(g1*VBE)-(g2*VBC);
+
+        g=gc;
+            Yn[netlist[i].a][netlist[i].a]+=g;
+            Yn[netlist[i].b][netlist[i].b]+=g;
+            Yn[netlist[i].a][netlist[i].b]-=g;
+            Yn[netlist[i].b][netlist[i].a]-=g;
+
+        g=ic;
+            Yn[netlist[i].a][numeroVariaveis+1]+=g;
+            Yn[netlist[i].b][numeroVariaveis+1]-=g;
+
+        g=bjt[i].alfa*ge;
+
+            Yn[netlist[i].a][netlist[i].b]+=g;
+            Yn[netlist[i].b][netlist[i].c]+=g;
+            Yn[netlist[i].a][netlist[i].c]-=g;
+            Yn[netlist[i].b][netlist[i].b]-=g;
+
+        g=bjt[i].alfa*ie;
+
+            Yn[netlist[i].a][numeroVariaveis+1]-=g;
+            Yn[netlist[i].b][numeroVariaveis+1]+=g;
+
+        g=ge;
+
+            Yn[netlist[i].b][netlist[i].b]+=g;
+            Yn[netlist[i].c][netlist[i].c]+=g;
+            Yn[netlist[i].b][netlist[i].c]-=g;
+            Yn[netlist[i].c][netlist[i].b]-=g;
+
+        g=ie;
+            Yn[netlist[i].b][numeroVariaveis+1]-=g;
+            Yn[netlist[i].c][numeroVariaveis+1]+=g;
+
+        g=bjt[i].alfar*gc;
+
+            Yn[netlist[i].c][netlist[i].b]+=g;
+            Yn[netlist[i].b][netlist[i].a]+=g;
+            Yn[netlist[i].c][netlist[i].a]-=g;
+            Yn[netlist[i].b][netlist[i].b]-=g;
+
+        g=bjt[i].alfar*ic;
+
+            Yn[netlist[i].c][numeroVariaveis+1]-=g;
+            Yn[netlist[i].b][numeroVariaveis+1]+=g;
+
+        /*efeito early */
+        g=i0;
+            Yn[netlist[i].a][numeroVariaveis+1]-=g;
+            Yn[netlist[i].c][numeroVariaveis+1]+=g;
+
+        g=g1;
+            Yn[netlist[i].a][netlist[i].b]+=g;
+            Yn[netlist[i].c][netlist[i].c]+=g;
+            Yn[netlist[i].a][netlist[i].c]-=g;
+            Yn[netlist[i].c][netlist[i].b]-=g;
+
+        g=g2;
+            Yn[netlist[i].a][netlist[i].b]+=g;
+            Yn[netlist[i].c][netlist[i].a]+=g;
+            Yn[netlist[i].a][netlist[i].a]-=g;
+            Yn[netlist[i].c][netlist[i].b]-=g;
+
+        g=g3;
+            Yn[netlist[i].a][netlist[i].a]+=g;
+            Yn[netlist[i].c][netlist[i].c]+=g;
+            Yn[netlist[i].a][netlist[i].c]-=g;
+            Yn[netlist[i].c][netlist[i].a]-=g;
+
+        // capacitores em DC
+        Yn[netlist[i].b][netlist[i].b]+=;
+        Yn[netlist[i].a][netlist[i].a]+=;
+        Yn[netlist[i].b][netlist[i].a]-=;
+        Yn[netlist[i].a][netlist[i].b]-=;
+
+        Yn[netlist[i].b][netlist[i].b]+=;
+        Yn[netlist[i].c][netlist[i].c]+=;
+        Yn[netlist[i].b][netlist[i].c]-=;
+        Yn[netlist[i].c][netlist[i].b]-=;
+
+      } // end if tipo = 'Q'
+    }
 }
 
 int main(void)
@@ -867,8 +990,8 @@ int main(void)
   else{
 
       for(frequencia=freqInicial;frequencia<=freqFinal;frequencia+=passo){
-            nBJTs=0;
-        montaEstampaAC();
+            //nBJTs=0;
+            montaEstampaAC();
             resolversistemaAC();
 
       fprintf(arquivo,"%g ",frequencia);
@@ -898,7 +1021,7 @@ int main(void)
 
   else{
       for(frequencia=freqInicial;frequencia<=freqFinal; frequencia*=pow(10,passo)) {
-          nBJTs=0;
+          //nBJTs=0;
           montaEstampaAC();
           resolversistemaAC();
 
@@ -926,7 +1049,7 @@ int main(void)
       else{
 
         for(frequencia=freqInicial;frequencia<=freqFinal;frequencia*=pow(2,passo)){
-            nBJTs=0;
+            //nBJTs=0;
             montaEstampaAC();
             resolversistemaAC();
 
