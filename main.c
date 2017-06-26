@@ -355,7 +355,7 @@ void montaEstampaDC(void) {
           VBE = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
           VCE = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
 
-        if ((int) netlist[i].tipo=='N'){
+        if ((int) bjt[i].tipo=='N'){
           vMaxExp=VMAX_DIODO;
           vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
           vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
@@ -593,136 +593,112 @@ void montaEstampaAC(void){
           YnComplex[netlist[L1].x][netlist[L2].x]+=2*PI*frequencia*indutanciaMutua*I;
           YnComplex[netlist[L2].x][netlist[L1].x]+=2*PI*frequencia*indutanciaMutua*I;
         }
-                else if (tipo=='Q') {
-          VC = variavelAtual[netlist[i].a];
-          VB = variavelAtual[netlist[i].b];
-          VE = variavelAtual[netlist[i].c];
-          VBC = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
-          VBE = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
-          VCE = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
+    else if (tipo=='Q') {
+      if ( bjt[i].tipo=='N'){
+      vMaxExp=VMAX_DIODO;
+      vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
+      vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
+      cbcrev=(vbcAux>0.3)? netlist[i].c0bc/pow(0.5,0.5):netlist[i].c0bc/pow((1.0-(vbcAux/FI_DIODO)),0.5)   ;
+      cbcdir=(vbcAux>0)? netlist[i].c1bc*(exp(vbcAux/netlist[i].vtbc)-1):0;
 
-        if ((int) netlist[i].tipo=='N'){
-          vMaxExp=VMAX_DIODO;
-          vbcAux= ((VBC)>vMaxExp)? vMaxExp:(VBC);
-          vbeAux= ((VBE)>vMaxExp)? vMaxExp:(VBE);
+      cberev=(vbeAux>0.3)? netlist[i].c0be/pow(0.5,0.5):netlist[i].c0be/pow((1.0-(vbeAux/FI_DIODO)),0.5);
+      cbedir=(vbeAux>0)? netlist[i].c1be*(exp(vbeAux/netlist[i].vtbe)-1):0;
+      }
+      else { /* PNP */
+    vMaxExp=-VMAX_DIODO;
+    vbcAux= ((VBC)<vMaxExp)? vMaxExp:(VBC);
+    vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
 
-          cbcrev = (vbcAux>0.3)? bjt[i].cZerobc/pow(0.5,0.5):bjt[i].cZerobc/pow((1.0-(vbcAux/FI_DIODO)),0.5);
-          cbcdir=(vbcAux>0)? bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc)-1):0;
+    cbcrev=((-vbcAux)>0.3)? netlist[i].c0bc/pow(0.5,0.5):netlist[i].c0bc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
+    cbcdir=((-vbcAux)>0)? netlist[i].c1bc*(exp(vbcAux/netlist[i].vtbc)-1):0;
 
-          cberev=(vbeAux>0.3)? bjt[i].cZerobe/pow(0.5,0.5):bjt[i].cZerobe/pow((1.0-(vbeAux/FI_DIODO)),0.5);
-          cbedir=(vbeAux>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
-        }
+    cberev=((-vbeAux)>0.3)? netlist[i].c0be/pow(0.5,0.5):netlist[i].c0be/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
+    cbedir=((-vbeAux)>0)? netlist[i].c1be*(exp(vbeAux/netlist[i].vtbe)-1):0;
+      }
+     /*DIODO BC  */
+    gc= (netlist[i].isbc/netlist[i].vtbc)*exp(vbcAux/netlist[i].vtbc);
+    ic= netlist[i].isbc * (exp(vbcAux/netlist[i].vtbc)-1) - gc*vbcAux;
+     /*DIODO BE  */
+    ge= (netlist[i].isbe/netlist[i].vtbe)*exp(vbeAux/netlist[i].vtbe);
+    ie= netlist[i].isbe * (exp(vbeAux/netlist[i].vtbe)-1) - ge*vbeAux;
+     /*EARLY  */
+    g1=netlist[i].alfa*ge*VCE/netlist[i].va;
+    g2=-gc*VCE/netlist[i].va;
+    g3=(netlist[i].alfa*(ie+ge*VBE)-(ic+gc*VBC))/netlist[i].va;
+    i0=-(g1*VBE)-(g2*VBC);
 
-        else {
-          if (contador == 0){
-            bjt[i].isbe=-bjt[i].isbe;
-            bjt[i].vtbe=-bjt[i].vtbe;
-            bjt[i].isbc=-bjt[i].isbc;
-            bjt[i].vtbc=-bjt[i].vtbc;
-            bjt[i].va=-bjt[i].va;
-          }
+    g=gc;
+    YnC[netlist[i].a][netlist[i].a]+=g;
+    YnC[netlist[i].b][netlist[i].b]+=g;
+    YnC[netlist[i].a][netlist[i].b]-=g;
+    YnC[netlist[i].b][netlist[i].a]-=g;
 
-          vMaxExp=-VMAX_DIODO;
-          vbcAux= ((VBC)<vMaxExp)? vMaxExp:(VBC);
-          vbeAux= ((VBE)<vMaxExp)? vMaxExp:(VBE);
+    g=netlist[i].alfa*ge;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].b][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].b][netlist[i].b]-=g;
 
-          cbcrev=((-vbcAux)>0.3)? bjt[i].cZerobc/pow(0.5,0.5):bjt[i].cZerobc/pow((1.0-((-vbcAux)/FI_DIODO)),0.5)   ;
-          cbcdir=((-vbcAux)>0)? bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc)-1):0;
+    g=ge;
+    YnC[netlist[i].b][netlist[i].b]+=g;
+    YnC[netlist[i].c][netlist[i].c]+=g;
+    YnC[netlist[i].b][netlist[i].c]-=g;
+    YnC[netlist[i].c][netlist[i].b]-=g;
 
-          cberev=((-vbeAux)>0.3)? bjt[i].cZerobe/pow(0.5,0.5):bjt[i].cZerobe/pow((1.0-((-vbeAux)/FI_DIODO)),0.5);
-          cbedir=((-vbeAux)>0)? bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe)-1):0;
-        }
+    g=netlist[i].alfar*gc;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].b][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].b][netlist[i].b]-=g;
 
-        /*DIODO BC  */
-        gc= (bjt[i].isbc/bjt[i].vtbc)*exp(vbcAux/bjt[i].vtbc);
-        ic= bjt[i].isbc * (exp(vbcAux/bjt[i].vtbc)-1) - gc*vbcAux;
-        /*DIODO BE  */
-        ge= (bjt[i].isbe/bjt[i].vtbe)*exp(vbeAux/bjt[i].vtbe);
-        ie= bjt[i].isbe * (exp(vbeAux/bjt[i].vtbe)-1) - ge*vbeAux;
-        /*EARLY  */
-        g1=bjt[i].alfa*ge*VCE/bjt[i].va;
-        g2=-gc*VCE/bjt[i].va;
-        g3=(bjt[i].alfa*(ie+ge*VBE)-(ic+gc*VBC))/bjt[i].va;
-        i0=-(g1*VBE)-(g2*VBC);
 
-        g=gc;
-            Yn[netlist[i].a][netlist[i].a]+=g;
-            Yn[netlist[i].b][netlist[i].b]+=g;
-            Yn[netlist[i].a][netlist[i].b]-=g;
-            Yn[netlist[i].b][netlist[i].a]-=g;
+    /*efeito early */
 
-        g=ic;
-            Yn[netlist[i].a][numeroVariaveis+1]+=g;
-            Yn[netlist[i].b][numeroVariaveis+1]-=g;
+    g=g1;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].c][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].c][netlist[i].b]-=g;
 
-        g=bjt[i].alfa*ge;
+    g=g2;
+    YnC[netlist[i].a][netlist[i].b]+=g;
+    YnC[netlist[i].c][netlist[i].a]+=g;
+    YnC[netlist[i].a][netlist[i].a]-=g;
+    YnC[netlist[i].c][netlist[i].b]-=g;
 
-            Yn[netlist[i].a][netlist[i].b]+=g;
-            Yn[netlist[i].b][netlist[i].c]+=g;
-            Yn[netlist[i].a][netlist[i].c]-=g;
-            Yn[netlist[i].b][netlist[i].b]-=g;
+    g=g3;
+    YnC[netlist[i].a][netlist[i].a]+=g;
+    YnC[netlist[i].c][netlist[i].c]+=g;
+    YnC[netlist[i].a][netlist[i].c]-=g;
+    YnC[netlist[i].c][netlist[i].a]-=g;
 
-        g=bjt[i].alfa*ie;
+    /*Creversa diodo bc */
+    gC=I*PI2*frequenciaInicial*cbcrev;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].a][netlist[i].a]+=gC;
+    YnC[netlist[i].b][netlist[i].a]-=gC;
+    YnC[netlist[i].a][netlist[i].b]-=gC;
 
-            Yn[netlist[i].a][numeroVariaveis+1]-=g;
-            Yn[netlist[i].b][numeroVariaveis+1]+=g;
+    /*Cdireta diodo bc */
+    gC=I*PI2*frequenciaInicial*cbcdir;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].a][netlist[i].a]+=gC;
+    YnC[netlist[i].b][netlist[i].a]-=gC;
+    YnC[netlist[i].a][netlist[i].b]-=gC;
 
-        g=ge;
+    /*Creversa diodo be */
+    gC=I*PI2*frequenciaInicial*cberev;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].c][netlist[i].c]+=gC;
+    YnC[netlist[i].b][netlist[i].c]-=gC;
+    YnC[netlist[i].c][netlist[i].b]-=gC;
 
-            Yn[netlist[i].b][netlist[i].b]+=g;
-            Yn[netlist[i].c][netlist[i].c]+=g;
-            Yn[netlist[i].b][netlist[i].c]-=g;
-            Yn[netlist[i].c][netlist[i].b]-=g;
-
-        g=ie;
-            Yn[netlist[i].b][numeroVariaveis+1]-=g;
-            Yn[netlist[i].c][numeroVariaveis+1]+=g;
-
-        g=bjt[i].alfar*gc;
-
-            Yn[netlist[i].c][netlist[i].b]+=g;
-            Yn[netlist[i].b][netlist[i].a]+=g;
-            Yn[netlist[i].c][netlist[i].a]-=g;
-            Yn[netlist[i].b][netlist[i].b]-=g;
-
-        g=bjt[i].alfar*ic;
-
-            Yn[netlist[i].c][numeroVariaveis+1]-=g;
-            Yn[netlist[i].b][numeroVariaveis+1]+=g;
-
-        /*efeito early */
-        g=i0;
-            Yn[netlist[i].a][numeroVariaveis+1]-=g;
-            Yn[netlist[i].c][numeroVariaveis+1]+=g;
-
-        g=g1;
-            Yn[netlist[i].a][netlist[i].b]+=g;
-            Yn[netlist[i].c][netlist[i].c]+=g;
-            Yn[netlist[i].a][netlist[i].c]-=g;
-            Yn[netlist[i].c][netlist[i].b]-=g;
-
-        g=g2;
-            Yn[netlist[i].a][netlist[i].b]+=g;
-            Yn[netlist[i].c][netlist[i].a]+=g;
-            Yn[netlist[i].a][netlist[i].a]-=g;
-            Yn[netlist[i].c][netlist[i].b]-=g;
-
-        g=g3;
-            Yn[netlist[i].a][netlist[i].a]+=g;
-            Yn[netlist[i].c][netlist[i].c]+=g;
-            Yn[netlist[i].a][netlist[i].c]-=g;
-            Yn[netlist[i].c][netlist[i].a]-=g;
-
-        // capacitores em DC
-        Yn[netlist[i].b][netlist[i].b]+=;
-        Yn[netlist[i].a][netlist[i].a]+=;
-        Yn[netlist[i].b][netlist[i].a]-=;
-        Yn[netlist[i].a][netlist[i].b]-=;
-
-        Yn[netlist[i].b][netlist[i].b]+=;
-        Yn[netlist[i].c][netlist[i].c]+=;
-        Yn[netlist[i].b][netlist[i].c]-=;
-        Yn[netlist[i].c][netlist[i].b]-=;
+    /*Cdireta diodo be */
+    gC=I*PI2*frequenciaInicial*cbedir;
+    YnC[netlist[i].b][netlist[i].b]+=gC;
+    YnC[netlist[i].c][netlist[i].c]+=gC;
+    YnC[netlist[i].b][netlist[i].c]-=gC;
+    YnC[netlist[i].c][netlist[i].b]-=gC;
 
       } // end if tipo = 'Q'
     }
