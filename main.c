@@ -165,6 +165,15 @@ void trocaNome(){ //rotina que troca extensao de .net para .tab
   printf("Resultados escritos no arquivo %s\n",novonome);
 }
 
+void mostraEstampaDC(void){
+  int indiceI, indiceJ;
+  for (indiceI = 0; indiceI < numeroVariaveis; indiceI++){
+    for (indiceJ = 0; indiceJ < numeroVariaveis; indiceJ++){
+      printf("%f\t", Yn[indiceI][indiceJ]);
+    }
+  }
+  printf("\n\n");
+}
 int resolverSistemaDC(void)
 {
   int i,j,l,a;
@@ -882,10 +891,13 @@ int main(void)
   }
 
   int j;
-  for (i=0; i<=numeroVariaveis; i++) {
-    for (j=0; j<=numeroVariaveis+1; j++)
+  for (i=0; i<numeroVariaveis; i++) {
+    for (j=0; j<numeroVariaveis+1; j++)
       Yn[i][j]=0;
   }
+
+  mostraEstampaDC();
+
   /* Monta estampas */
   int k = 0;
   while(fim==0){
@@ -893,6 +905,7 @@ int main(void)
      nBJTs=0;
    /* Zera sistema */
      montaEstampaDC();
+     mostraEstampaDC();
       /* Resolve o sistema */
     if (resolverSistemaDC()) {
       exit(1);
