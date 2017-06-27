@@ -88,6 +88,8 @@ char
     *txt,
     elemento,
     linha[MAX_CHAR_LINHA],
+    stringNumero[MAX_NOME],
+    lista[MAX_NOS+1][MAX_NOME+2],
     file[MAX_NOME_ARQUIVO];
 
 double
@@ -105,7 +107,7 @@ FILE *arquivo;
 int no(char *nome)
 {
     int i;
-    int numeroNo = atoi(nome) +1;
+    int numeroNo = atoi(nome);
 
     if (numeroVariaveis == 0) {
         listaNos[0] = numeroNo;
@@ -297,10 +299,13 @@ void mostraEstampaDC(void)
     int indiceI, indiceJ;
 
     for (indiceI = 1; indiceI <= numeroVariaveis; indiceI++) {
-        printf("\n");
         for (indiceJ = 1; indiceJ <= numeroVariaveis + 1; indiceJ++) {
-            printf("%+3.1f ", Yn[indiceI][indiceJ]);
+            if (Yn[indiceI][indiceJ] != 0)
+                printf("%+3.1f ", Yn[indiceI][indiceJ]);
+            else
+                printf(" ... ");
         }
+        printf("  <-  %s\n", lista[indiceI - 1]);
     }
 
     printf("\n\n");
@@ -386,7 +391,7 @@ void montaEstampaDC(void)
             Yn[netlist[i].x][netlist[i].d] += 1;
             Yn[netlist[i].y][netlist[i].x] += g;
         }
-
+        
         else if (tipo=='O') {
             Yn[netlist[i].a][netlist[i].x]+=1;
             Yn[netlist[i].b][netlist[i].x]-=1;
@@ -850,7 +855,6 @@ int main(void)
             sscanf(p, "%10s %lg %lg %lg", escala, &pontos, &freqInicial, &freqFinal);
             printf("%s %s %g %g %g\n", netlist[nElementos].nome, escala, pontos, freqInicial, freqFinal);
             tem = 1;
-            nElementos --;
         }
         else if (elemento == '*') { /* Comentario comeca com "*" */
             printf("Comentario: %s\n", linha);
@@ -872,7 +876,6 @@ int main(void)
     printf("\n\n");
 
     numeroNos = numeroVariaveis;
-    char stringNumero[MAX_NOME], lista[MAX_NOS+1][MAX_NOME+2]; // PRECISA DO +1???????????????????????????????????????????
     for (i = 0; i < numeroVariaveis; i++) {
         sprintf(stringNumero, "%u", listaNos[i]);
         strcpy(lista[i], stringNumero);
