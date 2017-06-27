@@ -105,7 +105,7 @@ FILE *arquivo;
 int no(char *nome)
 {
     int i;
-    int numeroNo = atoi(nome);
+    int numeroNo = atoi(nome) +1;
 
     if (numeroVariaveis == 0) {
         listaNos[0] = numeroNo;
@@ -386,14 +386,14 @@ void montaEstampaDC(void)
             Yn[netlist[i].x][netlist[i].d] += 1;
             Yn[netlist[i].y][netlist[i].x] += g;
         }
-        
+
         else if (tipo=='O') {
             Yn[netlist[i].a][netlist[i].x]+=1;
             Yn[netlist[i].b][netlist[i].x]-=1;
             Yn[netlist[i].x][netlist[i].c]+=1;
             Yn[netlist[i].x][netlist[i].d]-=1;
         }
-        
+
         else if (tipo == 'Q') {
             VC  = variavelAtual[netlist[i].a];
             VB  = variavelAtual[netlist[i].b];
@@ -850,6 +850,7 @@ int main(void)
             sscanf(p, "%10s %lg %lg %lg", escala, &pontos, &freqInicial, &freqFinal);
             printf("%s %s %g %g %g\n", netlist[nElementos].nome, escala, pontos, freqInicial, freqFinal);
             tem = 1;
+            nElementos --;
         }
         else if (elemento == '*') { /* Comentario comeca com "*" */
             printf("Comentario: %s\n", linha);
