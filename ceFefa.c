@@ -305,7 +305,7 @@ void mostraEstampaDC(void)
             else
                 printf(" ... ");
         }
-        printf("  <-  %s\n", lista[indiceI - 1]);
+        printf("  <- %s\n", lista[indiceI - 1]);
     }
 
     printf("\n\n");
@@ -315,6 +315,11 @@ void montaEstampaDC(void)
 {
     int i, j;
     char tipo;
+
+    for (i=0; i<=numeroVariaveis; i++) {
+        for (j=0; j<=numeroVariaveis+1; j++)
+            Yn[i][j]=0;
+    }
 
     for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
@@ -533,7 +538,7 @@ void montaEstampaAC(void)
     int i, j;
     char tipo;
 
-    for (i = 0; i <= numeroVariaveis + 1; i++) {
+    for (i = 0; i <= numeroVariaveis; i++) {
         for (j = 0; j <= numeroVariaveis + 1; j++) {
             YnComplex[i][j] = 0.0 + 0.0 * I;
         }
@@ -630,7 +635,7 @@ void montaEstampaAC(void)
             fim = 0;
 
             int indice;
-            for (indice = 0; indice < nElementos && fim != 2; indice++) {
+            for (indice = 1; indice <= nElementos && fim != 2; indice++) {
                 if (strcmp(acoplamento[i].lA, netlist[indice].nome) == 0) {
                     fim++;
                     L1 = indice;
@@ -870,20 +875,20 @@ int main(void)
 
     int i;
     printf("\nNos: ");
-    for (i = 0; i < numeroVariaveis; i++) {
+    for (i = 1; i <= numeroVariaveis; i++) {
         printf("%u", listaNos[i]);
     }
     printf("\n\n");
 
     numeroNos = numeroVariaveis;
-    for (i = 0; i < numeroVariaveis; i++) {
+    for (i = 0; i < numeroVariaveis; i++) { // lista começa em 0
         sprintf(stringNumero, "%u", listaNos[i]);
         strcpy(lista[i], stringNumero);
     }
 
     char tipo;
 
-    for (i = 0; i < nElementos; i++) {
+    for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
         if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo == 'L') {
             numeroVariaveis++;
@@ -916,7 +921,7 @@ int main(void)
     /* Lista tudo */
     printf("Variaveis internas: \n");
     for (i = 0; i < numeroVariaveis; i++)
-    printf("%d -> %s\n", i, lista[i]);
+        printf("%d -> %s\n", i, lista[i]);
     printf("\n");
 
     /* Monta o sistema nodal modificado */
@@ -928,8 +933,8 @@ int main(void)
     }
 
     int j;
-    for (i = 0; i < numeroVariaveis; i++) {
-        for (j = 0; j < numeroVariaveis + 1; j++) {
+    for (i = 0; i <= numeroVariaveis; i++) { // como no MNA1
+        for (j = 0; j <= numeroVariaveis + 1; j++) {
             Yn[i][j] = 0;
         }
     }
