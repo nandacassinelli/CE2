@@ -78,7 +78,7 @@ infoBJT bjt[MAX_ELEMENTOS];
 
 int
     numeroVariaveis, fim, numeroNos, tem, nC, nL, nBJTs, nElementos,
-    listaNos[MAX_NOS], contador, convergencia[MAX_NOS], L1,L2;
+    contador, convergencia[MAX_NOS], L1,L2;
 
 char
     escala[3],
@@ -104,33 +104,25 @@ double complex
 
 FILE *arquivo;
 
-int no(char *nome)
+int numero(char *nome)
 {
-    int i;
-    int numeroNo = atoi(nome);
+  int i,achou;
 
-    if (numeroVariaveis == 0) {
-        listaNos[0] = numeroNo;
-        numeroVariaveis++;
-
-        return numeroNo;
+  i=0; achou=0;
+  while (!achou && i<=numeroVariaveis)
+    if (!(achou=!strcmp(nome,lista[i]))) i++;
+  if (!achou) {
+    if (numeroVariaveis==MAX_NOS) {
+      printf("O programa so aceita ate %d nos\n",numeroVariaveis);
+      exit(1);
     }
-
-    for (i = 0; i < numeroVariaveis; i++) {
-        if (numeroNo == listaNos[i]) {
-            return numeroNo;
-        }
-    }
-
-    if (i == MAX_NOS - 1) {
-        printf("O numero maximo de %u nos foi ultrapassado.\n", MAX_NOS);
-        exit(1);
-    }
-
-    listaNos[numeroVariaveis] = numeroNo;
     numeroVariaveis++;
-
-    return numeroNo;
+    strcpy(lista[numeroVariaveis],nome);
+    return numeroVariaveis; /* novo no */
+  }
+  else {
+    return i; /* no ja conhecido */
+  }
 }
 
 double sind(double ang)
@@ -261,6 +253,35 @@ int resolversistemaAC(void)
 
     return 0;
 }
+
+void mostraNetlist(void){
+  int i; char tipo;
+
+  for (i=1; i<=nElementos; i++) {
+    tipo=netlist[i].nome[0];
+    if (tipo=='R'|| tipo=='C') {
+      printf("%s %d %d %g\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].valor);
+    }
+    else if (tipo=='I' || tipo=='V'){
+      printf("%s %d %d %g %g %g\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].modulo,netlist[i].fase,netlist[i].valor);
+    }
+    else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
+      printf("%s %d %d %d %d %g\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].c,netlist[i].d,netlist[i].valor);
+    }
+    else if (tipo=='O') {
+      printf("%s %d %d %d %d\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].c,netlist[i].d);
+    }
+    else if (tipo=='K') {
+      printf("%s %s %s %g\n",netlist[i].nome,acoplamento[i].lA,acoplamento[i].lB,netlist[i].valor);
+    }
+
+    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='L')
+      printf("Corrente jx: %d\n",netlist[i].x);
+    else if (tipo=='H')
+      printf("Correntes jx e jy: %d, %d\n",netlist[i].x,netlist[i].y);
+  }
+}
+
 
 void verificaConvergencia(void)
 {
@@ -764,6 +785,7 @@ int main(void)
     printf("Programa de Analise de Ponto de Operacao e Resposta em Frenquencia de Circuitos com BJT\n");
     printf("Por: Fernanda Cassinelli,  Ian Secchin,  Rodrigo Ferreira\n");
     nElementos = 0; nL = 0; nC = 0; nBJTs = 0; numeroVariaveis = 0;
+    strcpy(lista[0],"0");
 
     printf("Arquivo com o netlist: ");
     scanf("%50s", file);
@@ -808,14 +830,14 @@ int main(void)
                 printf("%s %s %s %g\n", netlist[nElementos].nome, noA, noB, netlist[nElementos].valor);
             }
 
-            netlist[nElementos].a = no(noA); // retorna o numero referente a um no ja existente ou um novo no
-            netlist[nElementos].b = no(noB);
+            netlist[nElementos].a = numero(noA); // retorna o numero referente a um no ja existente ou um novo no
+            netlist[nElementos].b = numero(noB);
         }
         else if (elemento == 'I' || elemento == 'V') { // I<nome> <no+> <no-> <modulo> <fase> <valor continuo> (fase em graus)
             sscanf(p, "%10s%10s%lg%lg%lg", noA, noB, &netlist[nElementos].modulo, &netlist[nElementos].fase, &netlist[nElementos].valor);
             printf("%s %s %s %g %g %g\n", netlist[nElementos].nome, noA, noB, netlist[nElementos].modulo, netlist[nElementos].fase, netlist[nElementos].valor);
-            netlist[nElementos].a = no(noA);
-            netlist[nElementos].b = no(noB);
+            netlist[nElementos].a = numero(noA);
+            netlist[nElementos].b = numero(noB);
         }
         else if (elemento == 'K') { // K<nome> <La> <Lb> <k> (La e Lb já declarados)
             sscanf(p, "%10s%10s%lg", acoplamento[nElementos].lA, acoplamento[nElementos].lB, &netlist[nElementos].valor);
@@ -824,18 +846,18 @@ int main(void)
         else if (elemento == 'G' || elemento == 'E' || elemento == 'F' || elemento == 'H') {
             sscanf(p, "%10s%10s%10s%10s%lg", noA, noB, noC, noD, &netlist[nElementos].valor);
             printf("%s %s %s %s %s %g\n", netlist[nElementos].nome, noA, noB, noC, noD, netlist[nElementos].valor);
-            netlist[nElementos].a = no(noA);
-            netlist[nElementos].b = no(noB);
-            netlist[nElementos].c = no(noC);
-            netlist[nElementos].d = no(noD);
+            netlist[nElementos].a = numero(noA);
+            netlist[nElementos].b = numero(noB);
+            netlist[nElementos].c = numero(noC);
+            netlist[nElementos].d = numero(noD);
         }
         else if (elemento == 'O') {
             sscanf(p, "%10s%10s%10s%10s", noA, noB, noC, noD);
             printf("%s %s %s %s %s\n", netlist[nElementos].nome, noA, noB, noC, noD);
-            netlist[nElementos].a = no(noA);
-            netlist[nElementos].b = no(noB);
-            netlist[nElementos].c = no(noC);
-            netlist[nElementos].d = no(noD);
+            netlist[nElementos].a = numero(noA);
+            netlist[nElementos].b = numero(noB);
+            netlist[nElementos].c = numero(noC);
+            netlist[nElementos].d = numero(noD);
         }
         else if (elemento == 'Q') { // Q<nome> <noc> <nob> <noe> <tipo> <alfa> <alfar> <Isbe> <VTbe> <Isbc> <VTbc> <VA> <C0be> <C1be> <C0bc> <C1bc>
             //srand(time(NULL));
@@ -843,9 +865,9 @@ int main(void)
             sscanf(p, "%10s%10s%10s%10s%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg", noA, noB, noC, bjt[nElementos].tipo, &bjt[nElementos].alfa, &bjt[nElementos].alfar, &bjt[nElementos].isbe, &bjt[nElementos].vtbe, &bjt[nElementos].isbc, &bjt[nElementos].vtbc, &bjt[nElementos].va, &bjt[nElementos].cZerobe, &bjt[nElementos].cUmbe, &bjt[nElementos].cZerobc, &bjt[nElementos].cUmbc);
             printf("%s %s %s %s %s %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", netlist[nElementos].nome, noA, noB, noC, bjt[nElementos].tipo, bjt[nElementos].alfa, bjt[nElementos].alfar, bjt[nElementos].isbe, bjt[nElementos].vtbe, bjt[nElementos].isbc, bjt[nElementos].vtbc, bjt[nElementos].va, bjt[nElementos].cZerobe, bjt[nElementos].cUmbe, bjt[nElementos].cZerobc, bjt[nElementos].cUmbc);
             strcpy(netlist[nElementos].tipo, bjt[nElementos].tipo);
-            netlist[nElementos].a = no(noA);
-            netlist[nElementos].b = no(noB);
-            netlist[nElementos].c = no(noC);
+            netlist[nElementos].a = numero(noA);
+            netlist[nElementos].b = numero(noB);
+            netlist[nElementos].c = numero(noC);
 
             bjt[nElementos].noc = netlist[nElementos].a;
             bjt[nElementos].nob = netlist[nElementos].b;
@@ -871,52 +893,39 @@ int main(void)
         }
     }
 
+    int i; char tipo;
+
+    for (i=1; i<=nElementos; i++) {
+        tipo=netlist[i].nome[0];
+        if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O') {
+            numeroVariaveis++;
+            if (numeroVariaveis>MAX_NOS) {
+                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
+                exit(1);
+            }
+            strcpy(lista[numeroVariaveis],"j"); /* Tem espaco para mais dois caracteres */
+            strcat(lista[numeroVariaveis],netlist[i].nome);
+            netlist[i].x=numeroVariaveis;
+        }
+
+        else if (tipo=='H') {
+            numeroVariaveis=numeroVariaveis+2;
+            if (numeroVariaveis>MAX_NOS) {
+                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
+                exit(1);
+            }
+            strcpy(lista[numeroVariaveis-1],"jx"); strcat(lista[numeroVariaveis-1],netlist[i].nome);
+            netlist[i].x=numeroVariaveis-1;
+            strcpy(lista[numeroVariaveis],"jy"); strcat(lista[numeroVariaveis],netlist[i].nome);
+            netlist[i].y=numeroVariaveis;
+        }
+    }
+
+
     fclose(arquivo);
 
-    int i;
-    printf("\nNos: ");
-    for (i = 1; i <= numeroVariaveis; i++) {
-        printf("%u", listaNos[i]);
-    }
-    printf("\n\n");
 
     numeroNos = numeroVariaveis;
-    for (i = 0; i < numeroVariaveis; i++) { // lista começa em 0
-        sprintf(stringNumero, "%u", listaNos[i]);
-        strcpy(lista[i], stringNumero);
-    }
-
-    char tipo;
-
-    for (i = 1; i <= nElementos; i++) {
-        tipo = netlist[i].nome[0];
-        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo == 'L') {
-            numeroVariaveis++;
-            if (numeroVariaveis > MAX_NOS) {
-                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
-                exit(1);
-            }
-            strcpy(lista[numeroVariaveis - 1],"j"); /* Tem espaco para mais dois caracteres */
-            sprintf(stringNumero, "%u", numeroVariaveis - 1);
-            strcat(lista[numeroVariaveis - 1], stringNumero);
-            netlist[i].x = numeroVariaveis;
-        }
-        else if (tipo == 'H') {
-            numeroVariaveis = numeroVariaveis + 2;
-            if (numeroVariaveis > MAX_NOS) {
-                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
-                exit(1);
-            }
-            strcpy(lista[numeroVariaveis - 2],"jx");
-            sprintf(stringNumero, "%u", numeroVariaveis - 2);
-            strcat(lista[numeroVariaveis - 2], stringNumero);
-            netlist[i].x = numeroVariaveis - 2;
-            strcpy(lista[numeroVariaveis - 1],"jy");
-            sprintf(stringNumero, "%u", numeroVariaveis - 1);
-            strcat(lista[numeroVariaveis - 1],stringNumero);
-            netlist[i].y = numeroVariaveis - 1;
-        }
-    }
 
     /* Lista tudo */
     printf("Variaveis internas: \n");
@@ -931,6 +940,8 @@ int main(void)
     else {
         printf("O circuito e linear. Tem %d nos, %d variaveis e %d elementos\n", numeroNos, numeroVariaveis, nElementos);
     }
+
+    mostraNetlist();
 
     int j;
     for (i = 0; i <= numeroVariaveis; i++) { // como no MNA1
