@@ -188,14 +188,14 @@ int resolverSistemaDC(void)
     for (i = 1; i <=numeroVariaveis; i++) {
         t = 0.0;
         a = i;
-        for (l = i; l < numeroVariaveis; l++) {
+        for (l = i; l <= numeroVariaveis; l++) {
             if (fabs(Yn[l][i]) > fabs(t)) {
                 a = l;
                 t = Yn[l][i];
             }
         }
         if (i != a) {
-            for (l = 0; l < numeroVariaveis + 1; l++) {
+            for (l = 1; l <= numeroVariaveis + 1; l++) {
                 p = Yn[i][l];
                 Yn[i][l] = Yn[a][l];
                 Yn[a][l] = p;
@@ -209,7 +209,7 @@ int resolverSistemaDC(void)
             Yn[i][j] /= t;
             p = Yn[i][j];
             if (p != 0) { /* Evita operacoes com zero */
-                for (l = 0; l < numeroVariaveis; l++) {
+                for (l = 1; l <= numeroVariaveis; l++) {
                     if (l != i) {
                         Yn[l][j] -= Yn[l][i] * p;
                     }
@@ -948,7 +948,7 @@ int main(void)
         nBJTs = 0;
         /* Zera sistema */
         montaEstampaDC();
-        /* Resolve o sistema */
+        
         if (resolverSistemaDC()) {
             exit(1);
         }
