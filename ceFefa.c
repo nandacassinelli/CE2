@@ -193,6 +193,7 @@ int resolverSistemaDC(void)
                 Yn[a][l] = p;
             }
         }
+        printf("t: %3.2f\n", t);
         if (fabs(t) < TOLG) {
             printf("Sistema DC singular\n");
             return 1;
@@ -1026,7 +1027,7 @@ int main(void)
         printf("O circuito e linear. Tem %d nos, %d variaveis e %d elementos\n", numeroNos, numeroVariaveis, nElementos);
     }
 
-    mostraNetlist();
+    //mostraNetlist();
 
     int j;
     for (i = 0; i <= numeroVariaveis; i++) { // como no MNA1
@@ -1046,6 +1047,8 @@ int main(void)
             nBJTs = 0;
             /* Zera sistema  e monta estampa*/
             montaEstampaDC();
+
+            mostraEstampaDC();
             
             if (resolverSistemaDC()) {
                 exit(1);
@@ -1069,6 +1072,7 @@ int main(void)
     }
     else{
         montaEstampaDC();
+        mostraEstampaDC();
         if (resolverSistemaDC()){
             exit(1);
         }
