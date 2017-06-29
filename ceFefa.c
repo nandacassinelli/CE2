@@ -78,7 +78,7 @@ infoBJT bjt[MAX_ELEMENTOS];
 
 int
     numeroVariaveis, fim, numeroNos, tem, nC, nL, nBJTs, nElementos,
-    contador, convergencia[MAX_NOS], L1,L2;
+    contador, convergencia[MAX_NOS+1], L1,L2;
 
 char
     escala[3],
@@ -352,7 +352,7 @@ void montaEstampaDC(void)
             Yn[netlist[i].b][netlist[i].b] += g;
             Yn[netlist[i].a][netlist[i].b] -= g;
             Yn[netlist[i].b][netlist[i].a] -= g;
-            mostraEstampaDC();
+            //mostraEstampaDC();
         }
         else if (tipo == 'L') {  //estampa do indutor controlado a corrente (P.O.)
             g = netlist[i].valor;
@@ -550,7 +550,7 @@ void montaEstampaDC(void)
             Yn[netlist[i].b][netlist[i].c] -= 1e9;
             Yn[netlist[i].c][netlist[i].b] -= 1e9;
         } // end of if 'Q'
-        mostraEstampaDC();
+        //mostraEstampaDC();
     } // end of for
 } // end of montaEstampaDC
 
@@ -860,7 +860,7 @@ int main(void)
             netlist[nElementos].d = numero(noD);
         }
         else if (elemento == 'Q') { // Q<nome> <noc> <nob> <noe> <tipo> <alfa> <alfar> <Isbe> <VTbe> <Isbc> <VTbc> <VA> <C0be> <C1be> <C0bc> <C1bc>
-            //srand(time(NULL));
+            srand(time(NULL));
             nBJTs++;
             sscanf(p, "%10s%10s%10s%10s%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg", noA, noB, noC, bjt[nElementos].tipo, &bjt[nElementos].alfa, &bjt[nElementos].alfar, &bjt[nElementos].isbe, &bjt[nElementos].vtbe, &bjt[nElementos].isbc, &bjt[nElementos].vtbc, &bjt[nElementos].va, &bjt[nElementos].cZerobe, &bjt[nElementos].cUmbe, &bjt[nElementos].cZerobc, &bjt[nElementos].cUmbc);
             printf("%s %s %s %s %s %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", netlist[nElementos].nome, noA, noB, noC, bjt[nElementos].tipo, bjt[nElementos].alfa, bjt[nElementos].alfar, bjt[nElementos].isbe, bjt[nElementos].vtbe, bjt[nElementos].isbc, bjt[nElementos].vtbc, bjt[nElementos].va, bjt[nElementos].cZerobe, bjt[nElementos].cUmbe, bjt[nElementos].cZerobc, bjt[nElementos].cUmbc);
@@ -893,8 +893,12 @@ int main(void)
         }
     }
 
+
+    fclose(arquivo);
+
     int i; char tipo;
 
+    numeroNos = numeroVariaveis;
     for (i=1; i<=nElementos; i++) {
         tipo=netlist[i].nome[0];
         if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O') {
@@ -922,11 +926,6 @@ int main(void)
     }
 
 
-    fclose(arquivo);
-
-
-    numeroNos = numeroVariaveis;
-
     /* Lista tudo */
     printf("Variaveis internas: \n");
     for (i = 0; i < numeroVariaveis; i++)
@@ -950,46 +949,48 @@ int main(void)
         }
     }
 
-    mostraEstampaDC();
+    contador = 0;
 
     /* Monta estampas */
     int k = 0;
-    while (fim == 0) {
-        contador++;
-        nBJTs = 0;
-        /* Zera sistema */
+    
+    if (nBJTs){    
+        while (fim == 0) {
+            contador++;
+            nBJTs = 0;
+            /* Zera sistema */
+            montaEstampaDC();
+            
+            if (resolverSistemaDC()) {
+                exit(1);
+            }
+            // corte ou saturação?
+            verificaConvergencia();
+
+            for (k = 0; (k < numeroVariaveis) && (k != -1);) {
+                if (convergencia[k] == 1) {
+                    k++;
+                }
+                else {
+                    k = -1;
+                }
+            }
+            if ((k == numeroVariaveis + 1) || (contador == 10000) || (nBJTs == 0)) {
+                fim = 1;
+            }
+        }//fim do while
+
+    }
+    else{
         montaEstampaDC();
-        
-        if (resolverSistemaDC()) {
+        if (resolverSistemaDC()){
             exit(1);
         }
-        /*
-        if (contador == 1) {
-            mostraNetlist();
-        }
-        */
 
-        verificaConvergencia();
-
-        for (k = 0; (k < numeroVariaveis) && (k != -1);) {
-            if (convergencia[k] == 1) {
-                k++;
-            }
-            else {
-                k = -1;
-            }
-        }
-        if ((k == numeroVariaveis + 1) || (contador == 10000) || (nBJTs == 0)) {
-            fim = 1;
-        }
-    }//fim do while
-
-
-    //printf("Netlist interno final:\n");
-    //mostraNetlist();
+    }
 
     printf("%d iteracoes foram realizadas.\n", contador);
-    contador = 0;
+
     printf("%d Elementos nao lineares\n", nBJTs);
     for (i = 0; i < nBJTs; i++) {
         for (j = 0; j < numeroVariaveis; j++) {
@@ -1005,7 +1006,6 @@ int main(void)
         }
     }
 
-    printf("Numero de nos: %d\n", k);
     if (contador != 0) {
         printf("%d solucoes nao convergiram. Ultima solucao do sistema:\n", contador);
     }
@@ -1013,12 +1013,8 @@ int main(void)
         printf("Solucao do Ponto de Operacao:\n");
     }
 
-    strcpy(txt,"Tensao");
-    for (i = 0; i< numeroVariaveis; i++) {
-        if (i == numeroNos + 1) {
-            strcpy(txt,"Corrente");
-        }
-       printf("%s %s: %g\n", txt, lista[i], Yn[i][numeroVariaveis + 1]);
+    for (i = 1; i<= numeroVariaveis; i++) {
+       printf("%s: %g\n", lista[i], Yn[i][numeroVariaveis + 1]);
     }
 
 
