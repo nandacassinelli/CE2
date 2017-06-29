@@ -41,7 +41,7 @@ Comentario:    *<comentario>
 #define UM                  0.999999999999999999999999999999999999999999
 #define ZERO                0.0000000000000000000000000000000000000001
 #define VMAX_DIODO          0.7
-#define FI_DIODO            0.6
+#define FI                  0.6
 
 typedef struct infoIndutor {
     double indutancia;
@@ -95,7 +95,7 @@ char
 double
     pontos, freqInicial, freqFinal, frequencia, Yn[MAX_NOS + 1][MAX_NOS + 2], g,
     variavelAtual[MAX_NOS], variavelProxima[MAX_NOS],
-    VC, VB, VE, VBC, VBE, VCE, gc, ge, g1, g2, g3, vMaxExp, vbcAux, vbeAux,
+    vbc, vbe, vce, gc, ge, g1, g2, g3, vbcAux, vbeAux,
     ic, ie, i0, cbcdir, cbcrev, cbedir, cberev, indutanciaMutua, passo;
 
 double complex
@@ -288,7 +288,6 @@ void verificaConvergencia(void)
     int i;
 
     for (i = 1;i <= numeroVariaveis; i++) {
-        variavelProxima[i] = 0;
         variavelProxima[i] = Yn[i][numeroVariaveis + 1];
         if (contador % 1000 != 0) {
             if (fabs(variavelProxima[i]) > 1 && fabs((variavelProxima[i] - variavelAtual[i]) / variavelProxima[i]) < 1e-9) {
@@ -305,12 +304,10 @@ void verificaConvergencia(void)
             }
         }
         else if (contador % 1000 == 0) {
-            if (i > numeroNos) {
+            if (i > numeroNos)
                 variavelAtual[i] = (rand() % 11) - 5;
-            }
-            else {
+            else
                 variavelAtual[i] = (rand() % 21) - 10;
-            }
         }
     }
 }
@@ -426,23 +423,44 @@ void montaEstampaDC(void)
         }
 
         else if (tipo == 'Q') {
-            VC  = variavelAtual[netlist[i].a];
-            VB  = variavelAtual[netlist[i].b];
-            VE  = variavelAtual[netlist[i].c];
-            VBC = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
-            VBE = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
-            VCE = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
+
+            vbc = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
+            vbe = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
+            vce = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
 
             if ((int) bjt[i].tipo == 'N') {
-                vMaxExp = VMAX_DIODO;
-                vbcAux  = (VBC > vMaxExp) ? vMaxExp : VBC;
-                vbeAux  = (VBE > vMaxExp) ? vMaxExp : VBE;
 
-                cbcrev = (vbcAux>0.3) ? bjt[i].cZerobc / pow(0.5, 0.5) : bjt[i].cZerobc / pow((1.0 - (vbcAux / FI_DIODO)), 0.5);
-                cbcdir = (vbcAux>0)   ? bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1) : 0;
 
-                cberev = (vbeAux>0.3) ? bjt[i].cZerobe / pow(0.5, 0.5) : bjt[i].cZerobe / pow((1.0 - (vbeAux / FI_DIODO)), 0.5);
-                cbedir = (vbeAux>0)   ? bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1) : 0;
+                if (vbc > VMAX_DIODO)
+                    vbcAux = VMAX_DIODO;
+                else
+                    vbcAux = vbc;
+
+                if (vbe > VMAX_DIODO)
+                    vbeAux = VMAX_DIODO;
+                else
+                    vbcAux = vbe;
+
+                if (vbcAux > 0.3)
+                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
+                else
+                    cbcrev = bjt[i].cZerobc/pow(1.0 - (vbcAux/FI), 0.5);
+
+                if (vbcAux > 0.0)
+                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/FI), 0.5);
+                else
+                    cbcdir = 0;
+
+                if (vbeAux > 0.3)
+                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
+                else
+                    cberev = bjt[i].cZerobe/pow(1.0 - (vbeAux/FI), 0.5);
+
+                if (vbcAux > 0.0)
+                    cbedir = bjt[i].cUmbe*(exp(vbeAux/FI), 0.5);
+                else
+                    cbedir = 0;
+
             }
             else {
                 if (contador == 0) {
@@ -453,28 +471,50 @@ void montaEstampaDC(void)
                     bjt[i].va   = -bjt[i].va;
                 }
 
-                vMaxExp = -VMAX_DIODO;
-                vbcAux  = (VBC < vMaxExp) ? vMaxExp : VBC;
-                vbeAux  = (VBE < vMaxExp) ? vMaxExp : VBE;
+                if (vbc < -VMAX_DIODO)
+                    vbcAux = -VMAX_DIODO;
+                else
+                    vbcAux = vbc;
 
-                cbcrev = (-vbcAux > 0.3) ? bjt[i].cZerobc / pow(0.5, 0.5) : bjt[i].cZerobc / pow((1.0 - ((-vbcAux) / FI_DIODO)), 0.5);
-                cbcdir = (-vbcAux > 0)   ? bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1) : 0;
+                if (vbe < -VMAX_DIODO)
+                    vbeAux = -VMAX_DIODO;
+                else
+                    vbcAux = vbe;
 
-                cberev = (-vbeAux > 0.3) ? bjt[i].cZerobe / pow(0.5, 0.5) : bjt[i].cZerobe / pow((1.0 - ((-vbeAux) / FI_DIODO)), 0.5);
-                cbedir = (-vbeAux > 0)   ? bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1) : 0;
+                if (- vbcAux > 0.3)
+                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
+                else
+                    cbcrev = bjt[i].cZerobc/pow(1.0 - ((-vbcAux)/FI), 0.5);
+
+                if (- vbcAux > 0.0) 
+                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc) -1);
+                else
+                    cbcdir = 0;
+
+                if (- vbeAux > 0.3)
+                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
+                else
+                    cberev = bjt[i].cZerobe/pow(1.0 - ((-vbeAux)/FI), 0.5);
+
+                if (- vbcAux > 0.0)
+                    cbedir = bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe) - 1);
+                else
+                    cbedir = 0;
             }
 
-            /*DIODO BC  */
+            // diodo b--c
             gc = (bjt[i].isbc / bjt[i].vtbc) * exp(vbcAux / bjt[i].vtbc);
             ic = bjt[i].isbc * (exp(vbcAux / bjt[i].vtbc) - 1) - gc * vbcAux;
-            /*DIODO BE  */
+
+            // diodo b--e
             ge = (bjt[i].isbe / bjt[i].vtbe) * exp(vbeAux / bjt[i].vtbe);
             ie = bjt[i].isbe * (exp(vbeAux / bjt[i].vtbe) - 1) - ge * vbeAux;
-            /*EARLY  */
-            g1 = bjt[i].alfa * ge * VCE / bjt[i].va;
-            g2 = -gc * VCE / bjt[i].va;
-            g3 = (bjt[i].alfa * (ie + ge * VBE) - (ic + gc * VBC)) / bjt[i].va;
-            i0 = -(g1 * VBE) - (g2 * VBC);
+
+            // early
+            g1 = bjt[i].alfa * ge * vce / bjt[i].va;
+            g2 = -gc * vce / bjt[i].va;
+            g3 = (bjt[i].alfa * (ie + ge * vbe) - (ic + gc * vbc)) / bjt[i].va;
+            i0 = -(g1 * vbe) - (g2 * vbc);
 
             g = gc;
             Yn[netlist[i].a][netlist[i].a] += g;
@@ -503,8 +543,8 @@ void montaEstampaDC(void)
             Yn[netlist[i].c][netlist[i].b] -= g;
 
             g = ie;
-            Yn[netlist[i].b][numeroVariaveis + 1] -= g; //???
-            Yn[netlist[i].c][numeroVariaveis + 1] += g; //???
+            Yn[netlist[i].b][numeroVariaveis + 1] -= g;
+            Yn[netlist[i].c][numeroVariaveis + 1] += g;
 
             g = bjt[i].alfar * gc;
             Yn[netlist[i].c][netlist[i].b] += g;
@@ -516,7 +556,7 @@ void montaEstampaDC(void)
             Yn[netlist[i].c][numeroVariaveis + 1] -= g;
             Yn[netlist[i].b][numeroVariaveis + 1] += g;
 
-            /*efeito early */
+            // early
             g = i0;
             Yn[netlist[i].a][numeroVariaveis + 1] -= g;
             Yn[netlist[i].c][numeroVariaveis + 1] += g;
@@ -673,38 +713,84 @@ void montaEstampaAC(void)
         }
         else if (tipo == 'Q') {
             if ((int) bjt[i].tipo == 'N') {
-                vMaxExp = VMAX_DIODO;
-                vbcAux  = (VBC > vMaxExp) ? vMaxExp : VBC;
-                vbeAux  = (VBE > vMaxExp) ? vMaxExp : VBE;
-                cbcrev  = (vbcAux > 0.3) ? netlist[i].cZerobc/pow(0.5, 0.5) : netlist[i].cZerobc / pow((1.0 - (vbcAux / FI_DIODO)), 0.5);
-                cbcdir  = (vbcAux > 0)   ? bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1) : 0;
 
-                cberev = (vbeAux>0.3) ? bjt[i].cZerobe / pow(0.5, 0.5) : bjt[i].cZerobe / pow((1.0 - (vbeAux / FI_DIODO)), 0.5);
-                cbedir = (vbeAux>0)   ? bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1) : 0;
+                if (vbc > VMAX_DIODO)
+                    vbcAux = VMAX_DIODO;
+                else
+                    vbcAux = vbc;
+
+                if (vbe > VMAX_DIODO)
+                    vbeAux = VMAX_DIODO;
+                else
+                    vbcAux = vbe;
+
+                if (vbcAux > 0.3)
+                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
+                else
+                    cbcrev = bjt[i].cZerobc/pow(1.0 - ((-vbcAux)/FI), 0.5);
+
+                if (vbcAux > 0.0) 
+                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc) -1);
+                else
+                    cbcdir = 0;
+
+                if (vbeAux > 0.3)
+                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
+                else
+                    cberev = bjt[i].cZerobe/pow(1.0 - ((vbeAux)/FI), 0.5);
+
+                if (vbcAux > 0.0)
+                    cbedir = bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe) - 1);
+                else
+                    cbedir = 0;
             }
-            else { /* PNP */
-                vMaxExp = -VMAX_DIODO;
-                vbcAux  = ((VBC)<vMaxExp)? vMaxExp:(VBC);
-                vbeAux  = ((VBE)<vMaxExp)? vMaxExp:(VBE);
 
-                cbcrev = (-vbcAux > 0.3) ? netlist[i].cZerobc / pow(0.5, 0.5) : netlist[i].cZerobc / pow((1.0 - ((-vbcAux) / FI_DIODO)), 0.5);
-                cbcdir = (-vbcAux > 0)   ? bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1) : 0;
+            else {
 
-                cberev = (-vbeAux > 0.3) ? bjt[i].cZerobe / pow(0.5, 0.5) : bjt[i].cZerobe / pow((1.0 - ((-vbeAux) / FI_DIODO)), 0.5);
-                cbedir = (-vbeAux > 0)   ? bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1) : 0;
+                if (vbc < -VMAX_DIODO)
+                    vbcAux = -VMAX_DIODO;
+                else
+                    vbcAux = vbc;
+
+                if (vbe < -VMAX_DIODO)
+                    vbeAux = -VMAX_DIODO;
+                else
+                    vbcAux = vbe;
+
+                if (- vbcAux > 0.3)
+                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
+                else
+                    cbcrev = bjt[i].cZerobc/pow(1.0 - ((-vbcAux)/FI), 0.5);
+
+                if (- vbcAux > 0.0) 
+                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc) -1);
+                else
+                    cbcdir = 0;
+
+                if (- vbeAux > 0.3)
+                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
+                else
+                    cberev = bjt[i].cZerobe/pow(1.0 - ((-vbeAux)/FI), 0.5);
+
+                if (- vbcAux > 0.0)
+                    cbedir = bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe) - 1);
+                else
+                    cbedir = 0;
             }
 
-             /*DIODO BC  */
+             // diodo b--c
             gc = (bjt[i].isbc / bjt[i].vtbc) * exp(vbcAux / bjt[i].vtbc);
             ic = bjt[i].isbc * (exp(vbcAux / bjt[i].vtbc) - 1) - gc * vbcAux;
-             /*DIODO BE  */
+
+             // diodo b--e
             ge = (bjt[i].isbe / bjt[i].vtbe) * exp(vbeAux / bjt[i].vtbe);
             ie = bjt[i].isbe * (exp(vbeAux / bjt[i].vtbe) - 1) - ge * vbeAux;
-             /*EARLY  */
-            g1 = bjt[i].alfa * ge * VCE / bjt[i].va;
-            g2 = -gc * VCE / bjt[i].va;
-            g3 = (bjt[i].alfa * (ie + ge * VBE) - (ic + gc * VBC)) / bjt[i].va;
-            i0 = -(g1 * VBE) - (g2 * VBC);
+
+             // early
+            g1 = bjt[i].alfa * ge * vce / bjt[i].va;
+            g2 = -gc * vce / bjt[i].va;
+            g3 = (bjt[i].alfa * (ie + ge * vbe) - (ic + gc * vbc)) / bjt[i].va;
+            i0 = -(g1 * vbe) - (g2 * vbc);
 
             g = gc;
             YnComplex[netlist[i].a][netlist[i].a] += g;
@@ -958,7 +1044,7 @@ int main(void)
         while (fim == 0) {
             contador++;
             nBJTs = 0;
-            /* Zera sistema */
+            /* Zera sistema  e monta estampa*/
             montaEstampaDC();
             
             if (resolverSistemaDC()) {
