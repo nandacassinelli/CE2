@@ -106,23 +106,27 @@ FILE *arquivo;
 
 int numero(char *nome)
 {
-  int i,achou;
+    int i = 0;
+    int achou = 0;
 
-  i=0; achou=0;
-  while (!achou && i<=numeroVariaveis)
-    if (!(achou=!strcmp(nome,lista[i]))) i++;
-  if (!achou) {
-    if (numeroVariaveis==MAX_NOS) {
-      printf("O programa so aceita ate %d nos\n",numeroVariaveis);
-      exit(1);
+    while (!achou && i <= numeroVariaveis) {
+        if (!(achou=!strcmp(nome,lista[i]))) {
+            i++;
+        }
     }
-    numeroVariaveis++;
-    strcpy(lista[numeroVariaveis],nome);
-    return numeroVariaveis; /* novo no */
-  }
-  else {
-    return i; /* no ja conhecido */
-  }
+
+    if (!achou) {
+        if (numeroVariaveis == MAX_NOS) {
+            printf("O programa so aceita ate %d nos\n", numeroVariaveis);
+            exit(1);
+        }
+        numeroVariaveis++;
+        strcpy(lista[numeroVariaveis], nome);
+        return numeroVariaveis; /* novo no */
+    }
+    else {
+        return i; /* no ja conhecido */
+    }
 }
 
 double sind(double ang)
@@ -177,7 +181,7 @@ int resolverSistemaDC(void)
     int i, j, l, a;
     double t, p;
 
-    for (i = 1; i <=numeroVariaveis; i++) {
+    for (i = 1; i <= numeroVariaveis; i++) {
         t = 0.0;
         a = i;
         for (l = i; l <= numeroVariaveis; l++) {
@@ -193,7 +197,7 @@ int resolverSistemaDC(void)
                 Yn[a][l] = p;
             }
         }
-        printf("t: %3.2f\n", t);
+        printf("t: %3.2f\n", fabs(t));
         if (fabs(t) < TOLG) {
             printf("Sistema DC singular\n");
             return 1;
@@ -255,34 +259,38 @@ int resolversistemaAC(void)
     return 0;
 }
 
-void mostraNetlist(void){
-  int i; char tipo;
+void mostraNetlist(void)
+{
+    int i;
+    char tipo;
 
-  for (i=1; i<=nElementos; i++) {
-    tipo=netlist[i].nome[0];
-    if (tipo=='R'|| tipo=='C') {
-      printf("%s %d %d %g\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].valor);
-    }
-    else if (tipo=='I' || tipo=='V'){
-      printf("%s %d %d %g %g %g\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].modulo,netlist[i].fase,netlist[i].valor);
-    }
-    else if (tipo=='G' || tipo=='E' || tipo=='F' || tipo=='H') {
-      printf("%s %d %d %d %d %g\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].c,netlist[i].d,netlist[i].valor);
-    }
-    else if (tipo=='O') {
-      printf("%s %d %d %d %d\n",netlist[i].nome,netlist[i].a,netlist[i].b,netlist[i].c,netlist[i].d);
-    }
-    else if (tipo=='K') {
-      printf("%s %s %s %g\n",netlist[i].nome,acoplamento[i].lA,acoplamento[i].lB,netlist[i].valor);
-    }
+    for (i = 1; i <= nElementos; i++) {
+        tipo = netlist[i].nome[0];
 
-    if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='L')
-      printf("Corrente jx: %d\n",netlist[i].x);
-    else if (tipo=='H')
-      printf("Correntes jx e jy: %d, %d\n",netlist[i].x,netlist[i].y);
-  }
+        if (tipo == 'R'|| tipo == 'C') {
+            printf("%s %d %d %g\n", netlist[i].nome, netlist[i].a, netlist[i].b, netlist[i].valor);
+        }
+        else if (tipo == 'I' || tipo == 'V'){
+            printf("%s %d %d %g %g %g\n", netlist[i].nome, netlist[i].a, netlist[i].b, netlist[i].modulo, netlist[i].fase, netlist[i].valor);
+        }
+        else if (tipo == 'G' || tipo == 'E' || tipo == 'F' || tipo == 'H') {
+            printf("%s %d %d %d %d %g\n", netlist[i].nome, netlist[i].a, netlist[i].b, netlist[i].c, netlist[i].d, netlist[i].valor);
+        }
+        else if (tipo == 'O') {
+            printf("%s %d %d %d %d\n", netlist[i].nome, netlist[i].a, netlist[i].b, netlist[i].c, netlist[i].d);
+        }
+        else if (tipo == 'K') {
+            printf("%s %s %s %g\n", netlist[i].nome, acoplamento[i].lA, acoplamento[i].lB, netlist[i].valor);
+        }
+
+        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo == 'L') {
+            printf("Corrente jx: %d\n", netlist[i].x);
+        }
+        else if (tipo == 'H') {
+            printf("Correntes jx e jy: %d, %d\n", netlist[i].x, netlist[i].y);
+        }
+    }
 }
-
 
 void verificaConvergencia(void)
 {
@@ -303,12 +311,16 @@ void verificaConvergencia(void)
                 convergencia[i] = 0;
                 variavelAtual[i] = variavelProxima[i];
             }
+
+            variavelProxima[i] = 0;
         }
         else if (contador % 1000 == 0) {
-            if (i > numeroNos)
+            if (i > numeroNos) {
                 variavelAtual[i] = (rand() % 11) - 5;
-            else
+            }
+            else {
                 variavelAtual[i] = (rand() % 21) - 10;
+            }
         }
     }
 }
@@ -320,11 +332,11 @@ void mostraEstampaDC(void)
     for (indiceI = 1; indiceI <= numeroVariaveis; indiceI++) {
         for (indiceJ = 1; indiceJ <= numeroVariaveis + 1; indiceJ++) {
             if (Yn[indiceI][indiceJ] != 0)
-                printf("%+3.1f ", Yn[indiceI][indiceJ]);
+                printf("%+3.1f\t", Yn[indiceI][indiceJ]);
             else
-                printf(" ... ");
+                printf("...\t");
         }
-        printf("  <- %s\n", lista[indiceI - 1]);
+        printf("<- %s\n", lista[indiceI - 1]);
     }
 
     printf("\n\n");
@@ -335,17 +347,19 @@ void montaEstampaDC(void)
     int i, j;
     char tipo;
 
-    for (i=0; i<=numeroVariaveis; i++) {
-        for (j=0; j<=numeroVariaveis+1; j++)
-            Yn[i][j]=0;
+    for (i = 0; i <= numeroVariaveis; i++) {
+        for (j = 0; j <= numeroVariaveis + 1; j++) {
+            Yn[i][j] = 0;
+        }
     }
 
     for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
         printf("%s\n", netlist[i].nome);
 
-        if (tipo == 'R' || tipo == 'C' ) {
-            g = 1.0/netlist[i].valor;
+        if (tipo == 'R' || tipo == 'C') {
+            g = 1.0 / netlist[i].valor;
+
             Yn[netlist[i].a][netlist[i].a] += g;
             Yn[netlist[i].b][netlist[i].b] += g;
             Yn[netlist[i].a][netlist[i].b] -= g;
@@ -372,6 +386,7 @@ void montaEstampaDC(void)
         }
         else if (tipo == 'I') {
             g = netlist[i].valor;
+
             Yn[netlist[i].a][numeroVariaveis + 1] -= g;
             Yn[netlist[i].b][numeroVariaveis + 1] += g;
         }
@@ -415,7 +430,7 @@ void montaEstampaDC(void)
             Yn[netlist[i].x][netlist[i].d] += 1;
             Yn[netlist[i].y][netlist[i].x] += g;
         }
-        
+
         else if (tipo=='O') {
             Yn[netlist[i].a][netlist[i].x]+=1;
             Yn[netlist[i].b][netlist[i].x]-=1;
@@ -424,44 +439,52 @@ void montaEstampaDC(void)
         }
 
         else if (tipo == 'Q') {
-
             vbc = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
             vbe = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
             vce = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
 
             if ((int) bjt[i].tipo == 'N') {
-
-
-                if (vbc > VMAX_DIODO)
+                if (vbc > VMAX_DIODO) {
                     vbcAux = VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbc;
+                }
 
-                if (vbe > VMAX_DIODO)
+                if (vbe > VMAX_DIODO) {
                     vbeAux = VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbe;
+                }
 
-                if (vbcAux > 0.3)
-                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
-                else
-                    cbcrev = bjt[i].cZerobc/pow(1.0 - (vbcAux/FI), 0.5);
+                if (vbcAux > 0.3) {
+                    cbcrev = bjt[i].cZerobc / pow(0.5, 0.5);
+                }
+                else {
+                    cbcrev = bjt[i].cZerobc / pow(1.0 - (vbcAux / FI), 0.5);
+                }
 
-                if (vbcAux > 0.0)
-                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/FI), 0.5);
-                else
+                if (vbcAux > 0.0) {
+                    cbcdir = bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1);
+                }
+                else {
                     cbcdir = 0;
+                }
 
-                if (vbeAux > 0.3)
-                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
-                else
-                    cberev = bjt[i].cZerobe/pow(1.0 - (vbeAux/FI), 0.5);
+                if (vbeAux > 0.3) {
+                    cberev = bjt[i].cZerobe / pow(0.5, 0.5);
+                }
+                else {
+                    cberev = bjt[i].cZerobe / pow(1.0 - (vbeAux / FI), 0.5);
+                }
 
-                if (vbcAux > 0.0)
-                    cbedir = bjt[i].cUmbe*(exp(vbeAux/FI), 0.5);
-                else
+                if (vbcAux > 0.0) {
+                    cbedir = bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1);
+                }
+                else {
                     cbedir = 0;
-
+                }
             }
             else {
                 if (contador == 0) {
@@ -472,35 +495,47 @@ void montaEstampaDC(void)
                     bjt[i].va   = -bjt[i].va;
                 }
 
-                if (vbc < -VMAX_DIODO)
+                if (vbc < -VMAX_DIODO) {
                     vbcAux = -VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbc;
+                }
 
-                if (vbe < -VMAX_DIODO)
+                if (vbe < -VMAX_DIODO) {
                     vbeAux = -VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbe;
+                }
 
-                if (- vbcAux > 0.3)
-                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
-                else
-                    cbcrev = bjt[i].cZerobc/pow(1.0 - ((-vbcAux)/FI), 0.5);
+                if (-vbcAux > 0.3) {
+                    cbcrev = bjt[i].cZerobc / pow(0.5, 0.5);
+                }
+                else {
+                    cbcrev = bjt[i].cZerobc / pow(1.0 - ((-vbcAux)/FI), 0.5);
+                }
 
-                if (- vbcAux > 0.0) 
-                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc) -1);
-                else
+                if (-vbcAux > 0.0) {
+                    cbcdir = bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1);
+                }
+                else {
                     cbcdir = 0;
+                }
 
-                if (- vbeAux > 0.3)
-                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
-                else
-                    cberev = bjt[i].cZerobe/pow(1.0 - ((-vbeAux)/FI), 0.5);
+                if (-vbeAux > 0.3) {
+                    cberev = bjt[i].cZerobe / pow(0.5, 0.5);
+                }
+                else {
+                    cberev = bjt[i].cZerobe / pow(1.0 - ((-vbeAux) / FI), 0.5);
+                }
 
-                if (- vbcAux > 0.0)
-                    cbedir = bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe) - 1);
-                else
+                if (-vbcAux > 0.0) {
+                    cbedir = bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1);
+                }
+                else {
                     cbedir = 0;
+                }
             }
 
             // diodo b--c
@@ -714,69 +749,90 @@ void montaEstampaAC(void)
         }
         else if (tipo == 'Q') {
             if ((int) bjt[i].tipo == 'N') {
-
-                if (vbc > VMAX_DIODO)
+                if (vbc > VMAX_DIODO) {
                     vbcAux = VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbc;
+                }
 
-                if (vbe > VMAX_DIODO)
+                if (vbe > VMAX_DIODO) {
                     vbeAux = VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbe;
+                }
 
-                if (vbcAux > 0.3)
-                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
-                else
-                    cbcrev = bjt[i].cZerobc/pow(1.0 - ((-vbcAux)/FI), 0.5);
+                if (vbcAux > 0.3) {
+                    cbcrev = bjt[i].cZerobc / pow(0.5, 0.5);
+                }
+                else {
+                    cbcrev = bjt[i].cZerobc / pow(1.0 - ((-vbcAux) / FI), 0.5);
+                }
 
-                if (vbcAux > 0.0) 
-                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc) -1);
-                else
+                if (vbcAux > 0.0) {
+                    cbcdir = bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1);
+                }
+                else {
                     cbcdir = 0;
+                }
 
-                if (vbeAux > 0.3)
-                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
-                else
-                    cberev = bjt[i].cZerobe/pow(1.0 - ((vbeAux)/FI), 0.5);
+                if (vbeAux > 0.3) {
+                    cberev = bjt[i].cZerobe / pow(0.5, 0.5);
+                }
+                else {
+                    cberev = bjt[i].cZerobe / pow(1.0 - ((vbeAux) / FI), 0.5);
+                }
 
-                if (vbcAux > 0.0)
-                    cbedir = bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe) - 1);
-                else
+                if (vbcAux > 0.0) {
+                    cbedir = bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1);
+                }
+                else {
                     cbedir = 0;
+                }
             }
-
             else {
-
-                if (vbc < -VMAX_DIODO)
+                if (vbc < -VMAX_DIODO) {
                     vbcAux = -VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbc;
+                }
 
-                if (vbe < -VMAX_DIODO)
+                if (vbe < -VMAX_DIODO) {
                     vbeAux = -VMAX_DIODO;
-                else
+                }
+                else {
                     vbcAux = vbe;
+                }
 
-                if (- vbcAux > 0.3)
-                    cbcrev = bjt[i].cZerobc/pow(0.5, 0.5);
-                else
-                    cbcrev = bjt[i].cZerobc/pow(1.0 - ((-vbcAux)/FI), 0.5);
+                if (- vbcAux > 0.3) {
+                    cbcrev = bjt[i].cZerobc / pow(0.5, 0.5);
+                }
+                else {
+                    cbcrev = bjt[i].cZerobc / pow(1.0 - ((-vbcAux) / FI), 0.5);
+                }
 
-                if (- vbcAux > 0.0) 
-                    cbcdir = bjt[i].cUmbc*(exp(vbcAux/bjt[i].vtbc) -1);
-                else
+                if (- vbcAux > 0.0) {
+                    cbcdir = bjt[i].cUmbc * (exp(vbcAux / bjt[i].vtbc) - 1);
+                }
+                else {
                     cbcdir = 0;
+                }
 
-                if (- vbeAux > 0.3)
-                    cberev = bjt[i].cZerobe/pow(0.5, 0.5);
-                else
-                    cberev = bjt[i].cZerobe/pow(1.0 - ((-vbeAux)/FI), 0.5);
+                if (- vbeAux > 0.3) {
+                    cberev = bjt[i].cZerobe / pow(0.5, 0.5);
+                }
+                else {
+                    cberev = bjt[i].cZerobe / pow(1.0 - ((-vbeAux) / FI), 0.5);
+                }
 
-                if (- vbcAux > 0.0)
-                    cbedir = bjt[i].cUmbe*(exp(vbeAux/bjt[i].vtbe) - 1);
-                else
+                if (- vbcAux > 0.0) {
+                    cbedir = bjt[i].cUmbe * (exp(vbeAux / bjt[i].vtbe) - 1);
+                }
+                else {
                     cbedir = 0;
+                }
             }
 
              // diodo b--c
@@ -843,7 +899,7 @@ void montaEstampaAC(void)
             YnComplex[netlist[i].b][netlist[i].a] -= gComplex;
             YnComplex[netlist[i].a][netlist[i].b] -= gComplex;
 
-            /*Cdireta diodo bc */https://drive.google.com/drive/u/0/my
+            /*Cdireta diodo bc */
             gComplex = I * PI * 2 * freqInicial * cbcdir;
             YnComplex[netlist[i].b][netlist[i].b] += gComplex;
             YnComplex[netlist[i].a][netlist[i].a] += gComplex;
@@ -867,21 +923,8 @@ void montaEstampaAC(void)
     }
 }
 
-int main(void)
+void lerNetlist()
 {
-    printf("Programa de Analise de Ponto de Operacao e Resposta em Frenquencia de Circuitos com BJT\n");
-    printf("Por: Fernanda Cassinelli,  Ian Secchin,  Rodrigo Ferreira\n");
-    nElementos = 0; nL = 0; nC = 0; nBJTs = 0; numeroVariaveis = 0;
-    strcpy(lista[0],"0");
-
-    printf("Arquivo com o netlist: ");
-    scanf("%50s", file);
-
-    arquivo = fopen(file, "r");
-    if (arquivo == 0) {
-        printf("O arquivo %s nao existe.\n", file);
-        exit(1);
-    }
     printf("Lendo o netlist...\n\n");
 
     fgets(linha, MAX_CHAR_LINHA, arquivo);
@@ -979,39 +1022,61 @@ int main(void)
             exit(1);
         }
     }
+}
 
+int main(void)
+{
+    printf("Programa de Analise de Ponto de Operacao e Resposta em Frenquencia de Circuitos com BJT\n");
+    printf("Por: Fernanda Cassinelli,  Ian Secchin,  Rodrigo Ferreira\n");
+    nElementos = 0; nL = 0; nC = 0; nBJTs = 0; numeroVariaveis = 0;
+    strcpy(lista[0],"0");
 
-    fclose(arquivo);
+    arquivo = 0;
+    while (arquivo == 0) {
+        printf("Arquivo com o netlist: ");
+        scanf("%50s", file);
 
-    int i; char tipo;
-
-    numeroNos = numeroVariaveis;
-    for (i=1; i<=nElementos; i++) {
-        tipo=netlist[i].nome[0];
-        if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O') {
-            numeroVariaveis++;
-            if (numeroVariaveis>MAX_NOS) {
-                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
-                exit(1);
-            }
-            strcpy(lista[numeroVariaveis],"j"); /* Tem espaco para mais dois caracteres */
-            strcat(lista[numeroVariaveis],netlist[i].nome);
-            netlist[i].x=numeroVariaveis;
-        }
-
-        else if (tipo=='H') {
-            numeroVariaveis=numeroVariaveis+2;
-            if (numeroVariaveis>MAX_NOS) {
-                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
-                exit(1);
-            }
-            strcpy(lista[numeroVariaveis-1],"jx"); strcat(lista[numeroVariaveis-1],netlist[i].nome);
-            netlist[i].x=numeroVariaveis-1;
-            strcpy(lista[numeroVariaveis],"jy"); strcat(lista[numeroVariaveis],netlist[i].nome);
-            netlist[i].y=numeroVariaveis;
+        arquivo = fopen(file, "r");
+        if (arquivo == 0) {
+            printf("O arquivo %s nao existe.\n", file);
         }
     }
 
+    lerNetlist();
+
+    fclose(arquivo);
+
+    numeroNos = numeroVariaveis;
+
+    int i;
+    char tipo;
+    for (i = 1; i <= nElementos; i++) {
+        tipo = netlist[i].nome[0];
+        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O') {
+            numeroVariaveis++;
+            if (numeroVariaveis > MAX_NOS) {
+                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
+                exit(1);
+            }
+            strcpy(lista[numeroVariaveis], "j"); /* Tem espaco para mais dois caracteres */
+            strcat(lista[numeroVariaveis], netlist[i].nome);
+            netlist[i].x = numeroVariaveis;
+        }
+
+        else if (tipo == 'H') {
+            numeroVariaveis = numeroVariaveis + 2;
+            if (numeroVariaveis > MAX_NOS) {
+                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
+                exit(1);
+            }
+            strcpy(lista[numeroVariaveis - 1], "jx");
+            strcat(lista[numeroVariaveis - 1], netlist[i].nome);
+            netlist[i].x = numeroVariaveis - 1;
+            strcpy(lista[numeroVariaveis], "jy");
+            strcat(lista[numeroVariaveis], netlist[i].nome);
+            netlist[i].y = numeroVariaveis;
+        }
+    }
 
     /* Lista tudo */
     printf("Variaveis internas: \n");
@@ -1040,8 +1105,7 @@ int main(void)
 
     /* Monta estampas */
     int k = 0;
-    
-    if (nBJTs){    
+    if (nBJTs){
         while (fim == 0) {
             contador++;
             nBJTs = 0;
@@ -1049,7 +1113,7 @@ int main(void)
             montaEstampaDC();
 
             mostraEstampaDC();
-            
+
             if (resolverSistemaDC()) {
                 exit(1);
             }
@@ -1103,7 +1167,7 @@ int main(void)
         printf("Solucao do Ponto de Operacao:\n");
     }
 
-    for (i = 1; i<= numeroVariaveis; i++) {
+    for (i = 0; i <= numeroVariaveis; i++) {
        printf("%s: %g\n", lista[i], Yn[i][numeroVariaveis + 1]);
     }
 
