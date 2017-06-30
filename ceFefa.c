@@ -51,7 +51,6 @@ typedef struct infoCapacitor {
     double capacitancia;
 } infoCapacitor;
 
-
 typedef struct acoplar {
     char lA[MAX_NOME], lB[MAX_NOME];
 } acoplar;
@@ -110,7 +109,7 @@ int numero(char *nome)
     int achou = 0;
 
     while (!achou && i <= numeroVariaveis) {
-        if (!(achou=!strcmp(nome,lista[i]))) {
+        if (!(achou = !strcmp(nome, lista[i]))) {
             i++;
         }
     }
@@ -141,7 +140,6 @@ double sind(double ang)
 
     return (t);
 }
-
 
 double cosd (double ang)
 {
@@ -197,7 +195,7 @@ int resolverSistemaDC(void)
                 Yn[a][l] = p;
             }
         }
-        printf("t: %3.2f\n", fabs(t));
+        printf("t: %3.2f\n", t);
         if (fabs(t) < TOLG) {
             printf("Sistema DC singular\n");
             return 1;
@@ -1050,37 +1048,37 @@ int main(void)
 
     int i;
     char tipo;
-
-    for (i=1; i<=nElementos; i++) {
-        
-        tipo=netlist[i].nome[0];
-        if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='L') {
+    for (i = 1; i <= nElementos; i++) {
+        tipo = netlist[i].nome[0];
+        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo=='L') {
             numeroVariaveis++;
-        
-        if (numeroVariaveis>MAX_NOS) {
-            printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
-            exit(1);
+            if (numeroVariaveis > MAX_NOS) {
+                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
+                exit(1);
+            }
+            strcpy(lista[numeroVariaveis], "j"); /* Tem espaco para mais dois caracteres */
+            strcat(lista[numeroVariaveis], netlist[i].nome);
+            netlist[i].x = numeroVariaveis;
         }
-        strcpy(lista[numeroVariaveis],"j"); /* Tem espaco para mais dois caracteres */
-        strcat(lista[numeroVariaveis],netlist[i].nome);
-        netlist[i].x=numeroVariaveis;
+
+        else if (tipo == 'H') {
+            numeroVariaveis = numeroVariaveis + 2;
+            if (numeroVariaveis > MAX_NOS) {
+                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
+                exit(1);
+            }
+            strcpy(lista[numeroVariaveis - 1], "jx");
+            strcat(lista[numeroVariaveis - 1], netlist[i].nome);
+            netlist[i].x = numeroVariaveis - 1;
+            strcpy(lista[numeroVariaveis], "jy");
+            strcat(lista[numeroVariaveis], netlist[i].nome);
+            netlist[i].y = numeroVariaveis;
         }
-        else if (tipo=='H') {
-          numeroVariaveis=numeroVariaveis+2;
-          if (numeroVariaveis>MAX_NOS) {
-            printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
-            exit(1);
-          }
-          strcpy(lista[numeroVariaveis-1],"jx"); strcat(lista[numeroVariaveis-1],netlist[i].nome);
-          netlist[i].x=numeroVariaveis-1;
-          strcpy(lista[numeroVariaveis],"jy"); strcat(lista[numeroVariaveis],netlist[i].nome);
-          netlist[i].y=numeroVariaveis;
-        }
-      }
+    }
 
     /* Lista tudo */
     printf("Variaveis internas: \n");
-    for (i = 0; i < numeroVariaveis; i++)
+    for (i = 0; i <= numeroVariaveis; i++)
         printf("%d -> %s\n", i, lista[i]);
     printf("\n");
 
@@ -1167,10 +1165,9 @@ int main(void)
         printf("Solucao do Ponto de Operacao:\n");
     }
 
-    for (i = 0; i <= numeroVariaveis; i++) {
+    for (i = 1; i <= numeroVariaveis; i++) {
        printf("%s: %g\n", lista[i], Yn[i][numeroVariaveis + 1]);
     }
-
 
     //RESPOSTA EM FREQUENCIA
 
