@@ -163,15 +163,9 @@ double cosd (double ang)
 //rotina que troca extensao de .net para .tab
 void trocaNome()
 {
-    int n = 0;
-    do {
-        n++;
-    } while (file[n] != '.');
-
-    memcpy(novonome, &file[0], n);
-    novonome[n] = '\0';
-    strcpy(novonome, strcat(novonome, ".tab"));
-    printf("Resultados escritos no arquivo %s\n", novonome);
+    novonome = file;
+    novonome[strlen(novonome) - 4] = '\0';   // Remove o '.net' do nome para poder inserir o '.tab'
+    strcat(novonome, ".tab");
 }
 
 int resolverSistemaDC(void)
@@ -195,7 +189,7 @@ int resolverSistemaDC(void)
                 Yn[a][l] = p;
             }
         }
-        printf("t: %3.2f\n", t);
+        //printf("t: %3.2f\n", t);
         if (fabs(t) < TOLG) {
             printf("Sistema DC singular\n");
             return 1;
@@ -353,7 +347,7 @@ void montaEstampaDC(void)
 
     for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
-        printf("%s\n", netlist[i].nome);
+        //printf("%s\n", netlist[i].nome);
 
         if (tipo == 'R' || tipo == 'C') {
             g = 1.0 / netlist[i].valor;
@@ -1077,17 +1071,17 @@ int main(void)
     }
 
     /* Lista tudo */
-    printf("Variaveis internas: \n");
+    printf("\nVariaveis internas: \n");
     for (i = 0; i <= numeroVariaveis; i++)
         printf("%d -> %s\n", i, lista[i]);
     printf("\n");
 
     /* Monta o sistema nodal modificado */
     if (nBJTs > 0) {
-        printf("O circuito e nao linear. Seu modelo linearizado tem %d nos, %d variaveis, %d elementos lineares e %d elementos nao lineares (que se decompoe em %d elementos linearizados)., com nElementos=%d\n", numeroNos, numeroVariaveis, nElementos - nBJTs, nBJTs, nBJTs * 7, nBJTs);
+        printf("O circuito e nao linear. Seu modelo linearizado tem %d nos, %d variaveis, %d elementos lineares e %d elementos nao lineares (que se decompoe em %d elementos linearizados).\n\n", numeroNos, numeroVariaveis, nElementos - nBJTs, nBJTs, nBJTs * 7);
     }
     else {
-        printf("O circuito e linear. Tem %d nos, %d variaveis e %d elementos\n", numeroNos, numeroVariaveis, nElementos);
+        printf("O circuito e linear. Tem %d nos, %d variaveis e %d elementos.\n\n", numeroNos, numeroVariaveis, nElementos);
     }
 
     //mostraNetlist();
@@ -1110,7 +1104,7 @@ int main(void)
             /* Zera sistema  e monta estampa*/
             montaEstampaDC();
 
-            mostraEstampaDC();
+            //mostraEstampaDC();
 
             if (resolverSistemaDC()) {
                 exit(1);
@@ -1130,20 +1124,18 @@ int main(void)
                 fim = 1;
             }
         }//fim do while
-
     }
-    else{
+    else {
         montaEstampaDC();
-        mostraEstampaDC();
+        //mostraEstampaDC();
         if (resolverSistemaDC()){
             exit(1);
         }
-
     }
 
-    printf("%d iteracoes foram realizadas.\n", contador);
+    printf("%d Iteracoes foram realizadas.\n\n", contador);
 
-    printf("%d Elementos nao lineares\n", nBJTs);
+    printf("%d Elementos nao lineares.\n\n", nBJTs);
     for (i = 0; i < nBJTs; i++) {
         for (j = 0; j < numeroVariaveis; j++) {
             if (convergencia[j] == 0) {
@@ -1166,19 +1158,25 @@ int main(void)
     }
 
     for (i = 1; i <= numeroVariaveis; i++) {
-       printf("%s: %g\n", lista[i], Yn[i][numeroVariaveis + 1]);
+        if (i > numeroNos) {
+            txt = "Corrente";
+        }
+        else {
+            txt = "Tensao";
+        }
+        printf("%s %s: %g\n", txt, lista[i], Yn[i][numeroVariaveis + 1]);
     }
 
     //RESPOSTA EM FREQUENCIA
 
     if (tem == 1) {
-        printf("Analise de Resposta em Frequencia:\n");
-
+        printf("\nAnalisando Resposta em Frequencia...\n");
         for (i = 0; i <= numeroVariaveis; i++) {
             for (j = 0; j<= numeroVariaveis + 1; j++) {
-                YnComplex[i][j]=0.0 + 0.0 * I;
+                YnComplex[i][j] = 0.0 + 0.0 * I;
             }
         }
+
         trocaNome();
 
         if (strcmp(escala, "LIN") == 0) {
@@ -1274,6 +1272,9 @@ int main(void)
 
             fclose(arquivo);
         }
+
+        printf("Analise realizada com sucesso!\n");
+        printf("Os resultados foram escritos no arquivo %s\n", novonome);
     }
     else if (tem == 0) {
         printf("Sistema possui apenas Ponto de Operacao\n");
