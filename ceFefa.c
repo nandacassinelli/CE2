@@ -1050,33 +1050,33 @@ int main(void)
 
     int i;
     char tipo;
-    for (i = 1; i <= nElementos; i++) {
-        tipo = netlist[i].nome[0];
-        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O') {
-            numeroVariaveis++;
-            if (numeroVariaveis > MAX_NOS) {
-                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
-                exit(1);
-            }
-            strcpy(lista[numeroVariaveis], "j"); /* Tem espaco para mais dois caracteres */
-            strcat(lista[numeroVariaveis], netlist[i].nome);
-            netlist[i].x = numeroVariaveis;
-        }
 
-        else if (tipo == 'H') {
-            numeroVariaveis = numeroVariaveis + 2;
-            if (numeroVariaveis > MAX_NOS) {
-                printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
-                exit(1);
-            }
-            strcpy(lista[numeroVariaveis - 1], "jx");
-            strcat(lista[numeroVariaveis - 1], netlist[i].nome);
-            netlist[i].x = numeroVariaveis - 1;
-            strcpy(lista[numeroVariaveis], "jy");
-            strcat(lista[numeroVariaveis], netlist[i].nome);
-            netlist[i].y = numeroVariaveis;
+    for (i=1; i<=nElementos; i++) {
+        
+        tipo=netlist[i].nome[0];
+        if (tipo=='V' || tipo=='E' || tipo=='F' || tipo=='O' || tipo=='L') {
+            numeroVariaveis++;
+        
+        if (numeroVariaveis>MAX_NOS) {
+            printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
+            exit(1);
         }
-    }
+        strcpy(lista[numeroVariaveis],"j"); /* Tem espaco para mais dois caracteres */
+        strcat(lista[numeroVariaveis],netlist[i].nome);
+        netlist[i].x=numeroVariaveis;
+        }
+        else if (tipo=='H') {
+          numeroVariaveis=numeroVariaveis+2;
+          if (numeroVariaveis>MAX_NOS) {
+            printf("As correntes extra excederam o numero de variaveis permitido (%d)\n",MAX_NOS);
+            exit(1);
+          }
+          strcpy(lista[numeroVariaveis-1],"jx"); strcat(lista[numeroVariaveis-1],netlist[i].nome);
+          netlist[i].x=numeroVariaveis-1;
+          strcpy(lista[numeroVariaveis],"jy"); strcat(lista[numeroVariaveis],netlist[i].nome);
+          netlist[i].y=numeroVariaveis;
+        }
+      }
 
     /* Lista tudo */
     printf("Variaveis internas: \n");
