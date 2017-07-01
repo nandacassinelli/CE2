@@ -1013,6 +1013,7 @@ void lerNetlist()
         else if (elemento == '.') {
             sscanf(p, "%10s %lg %lg %lg", escala, &pontos, &freqInicial, &freqFinal);
             printf("%s %s %g %g %g\n", netlist[nElementos].nome, escala, pontos, freqInicial, freqFinal);
+            nElementos--;
             tem = 1;
         }
         else if (elemento == '*') { /* Comentario comeca com "*" */
