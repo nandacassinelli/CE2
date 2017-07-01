@@ -1055,7 +1055,7 @@ int main(void)
     char tipo;
     for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
-        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo=='L') {
+        if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo == 'L') {
             numeroVariaveis++;
             if (numeroVariaveis > MAX_NOS) {
                 printf("As correntes extra excederam o numero de variaveis permitido (%d)\n", MAX_NOS);
@@ -1213,7 +1213,7 @@ int main(void)
                     resolversistemaAC();
 
                     fprintf(arquivo, "%g ", frequencia);
-                    for (i = 0; i < numeroVariaveis; i++) {
+                    for (i = 1; i <= numeroVariaveis; i++) {
                         fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180 / PI) * carg(YnComplex[i][numeroVariaveis + 1]));
                     }
                     fprintf(arquivo, "\n");
