@@ -58,7 +58,7 @@ typedef struct acoplar {
 typedef struct infoBJT {
     int noc, nob, noe;
     char tipo[MAX_NOME];
-    double alfa, alfar, isbc, vtbc, isbe, vtbe, va, cZerobe, cUmbe, cZerobc,cUmbc;
+    double alfa, alfar, isbc, vtbc, isbe, vtbe, va, cZerobe, cUmbe, cZerobc,cUmbc, vbe, vce, vbc;
 } infoBJT;
 
 typedef struct infoElementos {
@@ -94,7 +94,7 @@ char
 double
     pontos, freqInicial, freqFinal, frequencia, Yn[MAX_NOS + 1][MAX_NOS + 2], g,
     variavelAtual[MAX_NOS], variavelProxima[MAX_NOS],
-    vbc, vbe, vce, gc, ge, g1, g2, g3, vbcAux, vbeAux,
+    gc, ge, g1, g2, g3, vbcAux, vbeAux,
     ic, ie, i0, cbcdir, cbcrev, cbedir, cberev, indutanciaMutua, passo;
 
 double complex
@@ -433,23 +433,23 @@ void montaEstampaDC(void)
 
         else if (tipo == 'Q') {
             nBJTs++;
-            vbc = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
-            vbe = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
-            vce = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
+            bjt[i].vbc = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
+            bjt[i].vbe = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
+            bjt[i].vce = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
 
             if ((int) bjt[i].tipo == 'N') {
-                if (vbc > VMAX_DIODO) {
+                if (bjt[i].vbc > VMAX_DIODO) {
                     vbcAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbc;
+                    vbcAux = bjt[i].vbc;
                 }
 
-                if (vbe > VMAX_DIODO) {
+                if (bjt[i].vbe > VMAX_DIODO) {
                     vbeAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbe;
+                    vbcAux = bjt[i].vbe;
                 }
 
                 if (vbcAux > 0.3) {
@@ -489,18 +489,18 @@ void montaEstampaDC(void)
                     bjt[i].va   = -bjt[i].va;
                 }
 
-                if (vbc < -VMAX_DIODO) {
+                if (bjt[i].vbc < -VMAX_DIODO) {
                     vbcAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbc;
+                    vbcAux = bjt[i].vbc;
                 }
 
-                if (vbe < -VMAX_DIODO) {
+                if (bjt[i].vbe < -VMAX_DIODO) {
                     vbeAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbe;
+                    vbcAux = bjt[i].vbe;
                 }
 
                 if (-vbcAux > 0.3) {
@@ -541,10 +541,10 @@ void montaEstampaDC(void)
             ie = bjt[i].isbe * (exp(vbeAux / bjt[i].vtbe) - 1) - ge * vbeAux;
 
             // early
-            g1 = bjt[i].alfa * ge * vce / bjt[i].va;
-            g2 = -gc * vce / bjt[i].va;
-            g3 = (bjt[i].alfa * (ie + ge * vbe) - (ic + gc * vbc)) / bjt[i].va;
-            i0 = -(g1 * vbe) - (g2 * vbc);
+            g1 = bjt[i].alfa * ge * bjt[i].vce / bjt[i].va;
+            g2 = -gc * bjt[i].vce / bjt[i].va;
+            g3 = (bjt[i].alfa * (ie + ge * bjt[i].vbe) - (ic + gc * bjt[i].vbc)) / bjt[i].va;
+            i0 = -(g1 * bjt[i].vbe) - (g2 * bjt[i].vbc);
 
             g = gc;
             Yn[netlist[i].a][netlist[i].a] += g;
@@ -745,18 +745,18 @@ void montaEstampaAC(void)
         else if (tipo == 'Q') {
             nBJTs++;
             if ((int) bjt[i].tipo == 'N') {
-                if (vbc > VMAX_DIODO) {
+                if (bjt[i].vbc > VMAX_DIODO) {
                     vbcAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbc;
+                    vbcAux = bjt[i].vbc;
                 }
 
-                if (vbe > VMAX_DIODO) {
+                if (bjt[i].vbe > VMAX_DIODO) {
                     vbeAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbe;
+                    vbcAux = bjt[i].vbe;
                 }
 
                 if (vbcAux > 0.3) {
@@ -788,18 +788,18 @@ void montaEstampaAC(void)
                 }
             }
             else {
-                if (vbc < -VMAX_DIODO) {
+                if (bjt[i].vbc < -VMAX_DIODO) {
                     vbcAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbc;
+                    vbcAux = bjt[i].vbc;
                 }
 
-                if (vbe < -VMAX_DIODO) {
+                if (bjt[i].vbe < -VMAX_DIODO) {
                     vbeAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = vbe;
+                    vbcAux = bjt[i].vbe;
                 }
 
                 if (- vbcAux > 0.3) {
@@ -840,10 +840,10 @@ void montaEstampaAC(void)
             ie = bjt[i].isbe * (exp(vbeAux / bjt[i].vtbe) - 1) - ge * vbeAux;
 
              // early
-            g1 = bjt[i].alfa * ge * vce / bjt[i].va;
-            g2 = -gc * vce / bjt[i].va;
-            g3 = (bjt[i].alfa * (ie + ge * vbe) - (ic + gc * vbc)) / bjt[i].va;
-            i0 = -(g1 * vbe) - (g2 * vbc);
+            g1 = bjt[i].alfa * ge * bjt[i].vce / bjt[i].va;
+            g2 = -gc * bjt[i].vce / bjt[i].va;
+            g3 = (bjt[i].alfa * (ie + ge * bjt[i].vbe) - (ic + gc * bjt[i].vbc)) / bjt[i].va;
+            i0 = -(g1 * bjt[i].vbe) - (g2 * bjt[i].vbc);
 
             g = gc;
             YnComplex[netlist[i].a][netlist[i].a] += g;
