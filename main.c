@@ -31,7 +31,7 @@ Comentario:    *<comentario>
 #include <complex.h>
 #include <time.h>
 
-#define MAX_CHAR_LINHA      80
+#define MAX_CHAR_LINHA      100
 #define MAX_NOME            11
 #define MAX_NOME_ARQUIVO    20
 #define MAX_ELEMENTOS       500
@@ -58,7 +58,7 @@ typedef struct acoplar {
 typedef struct infoBJT {
     int noc, nob, noe;
     char tipo[MAX_NOME];
-    double alfa, alfar, isbc, vtbc, isbe, vtbe, va, cZerobe, cUmbe, cZerobc, cUmbc, vbe, vce, vbc;
+    double alfa, alfar, isbc, vtbc, isbe, vtbe, va, cZerobe, cUmbe, cZerobc,cUmbc;
 } infoBJT;
 
 typedef struct infoElementos {
@@ -94,7 +94,7 @@ char
 double
     pontos, freqInicial, freqFinal, frequencia, Yn[MAX_NOS + 1][MAX_NOS + 2], g,
     variavelAtual[MAX_NOS], variavelProxima[MAX_NOS],
-    gc, ge, g1, g2, g3, vbcAux, vbeAux,
+    vbc, vbe, vce, gc, ge, g1, g2, g3, vbcAux, vbeAux,
     ic, ie, i0, cbcdir, cbcrev, cbedir, cberev, indutanciaMutua, passo;
 
 double complex
@@ -191,7 +191,7 @@ int resolverSistemaDC(void)
         }
         //printf("t: %3.2f\n", t);
         if (fabs(t) < TOLG) {
-            //printf("Sistema DC singular\n");
+            printf("Sistema DC singular\n");
             return 1;
         }
         for (j = numeroVariaveis + 1; j > 0; j--) {  /* Basta j>i em vez de j>0 */
@@ -274,9 +274,6 @@ void mostraNetlist(void)
         else if (tipo == 'K') {
             printf("%s %s %s %g\n", netlist[i].nome, acoplamento[i].lA, acoplamento[i].lB, netlist[i].valor);
         }
-        else if (tipo == 'Q') { // Q<nome> <noc> <nob> <noe> <tipo> <alfa> <alfar> <Isbe> <VTbe> <Isbc> <VTbc> <VA> <C0be> <C1be> <C0bc> <C1bc>
-            printf("%s %s %s %s %d\n", netlist[i].a, netlist[i].b), netlist[i].c, bjt[i].tipo, bjt[i].alfa;
-        }
 
         if (tipo == 'V' || tipo == 'E' || tipo == 'F' || tipo == 'O' || tipo == 'L') {
             printf("Corrente jx: %d\n", netlist[i].x);
@@ -348,6 +345,7 @@ void montaEstampaDC(void)
         }
     }
 
+    nBJTs = 0;
     for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
         //printf("%s\n", netlist[i].nome);
@@ -427,30 +425,31 @@ void montaEstampaDC(void)
         }
 
         else if (tipo=='O') {
-            Yn[netlist[i].a][netlist[i].x]+=1;
-            Yn[netlist[i].b][netlist[i].x]-=1;
-            Yn[netlist[i].x][netlist[i].c]+=1;
-            Yn[netlist[i].x][netlist[i].d]-=1;
+            Yn[netlist[i].a][netlist[i].x] += 1;
+            Yn[netlist[i].b][netlist[i].x] -= 1;
+            Yn[netlist[i].x][netlist[i].c] += 1;
+            Yn[netlist[i].x][netlist[i].d] -= 1;
         }
 
         else if (tipo == 'Q') {
-            bjt[i].vbc = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
-            bjt[i].vbe = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
-            bjt[i].vce = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
+            nBJTs++;
+            vbc = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].a];
+            vbe = variavelAtual[netlist[i].b] - variavelAtual[netlist[i].c];
+            vce = variavelAtual[netlist[i].a] - variavelAtual[netlist[i].c];
 
             if ((int) bjt[i].tipo == 'N') {
-                if (bjt[i].vbc > VMAX_DIODO) {
+                if (vbc > VMAX_DIODO) {
                     vbcAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbc;
+                    vbcAux = vbc;
                 }
 
-                if (bjt[i].vbe > VMAX_DIODO) {
+                if (vbe > VMAX_DIODO) {
                     vbeAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbcAux = vbe;
                 }
 
                 if (vbcAux > 0.3) {
@@ -490,18 +489,18 @@ void montaEstampaDC(void)
                     bjt[i].va   = -bjt[i].va;
                 }
 
-                if (bjt[i].vbc < -VMAX_DIODO) {
+                if (vbc < -VMAX_DIODO) {
                     vbcAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbc;
+                    vbcAux = vbc;
                 }
 
-                if (bjt[i].vbe < -VMAX_DIODO) {
+                if (vbe < -VMAX_DIODO) {
                     vbeAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbcAux = vbe;
                 }
 
                 if (-vbcAux > 0.3) {
@@ -542,10 +541,10 @@ void montaEstampaDC(void)
             ie = bjt[i].isbe * (exp(vbeAux / bjt[i].vtbe) - 1) - ge * vbeAux;
 
             // early
-            g1 = bjt[i].alfa * ge * bjt[i].vce / bjt[i].va;
-            g2 = -gc * bjt[i].vce / bjt[i].va;
-            g3 = (bjt[i].alfa * (ie + ge * bjt[i].vbe) - (ic + gc * bjt[i].vbc)) / bjt[i].va;
-            i0 = -(g1 * bjt[i].vbe) - (g2 * bjt[i].vbc);
+            g1 = bjt[i].alfa * ge * vce / bjt[i].va;
+            g2 = -gc * vce / bjt[i].va;
+            g3 = (bjt[i].alfa * (ie + ge * vbe) - (ic + gc * vbc)) / bjt[i].va;
+            i0 = -(g1 * vbe) - (g2 * vbc);
 
             g = gc;
             Yn[netlist[i].a][netlist[i].a] += g;
@@ -636,6 +635,7 @@ void montaEstampaAC(void)
         }
     }
 
+    nBJTs = 0;
     for (i = 1; i <= nElementos; i++) {
         tipo = netlist[i].nome[0];
 
@@ -743,24 +743,20 @@ void montaEstampaAC(void)
             YnComplex[netlist[L2].x][netlist[L1].x] += 2 * PI * frequencia * indutanciaMutua * I;
         }
         else if (tipo == 'Q') {
-            //if (contador == 1){
-            //    variavelAtual[netlist[i].a] = 0.2;
-            //    variavelAtual[netlist[i].b] = 1;
-            //    variavelAtual[netlist[i].c] = 0.3;
-            //}
+            nBJTs++;
             if ((int) bjt[i].tipo == 'N') {
-                if (bjt[i].vbc > VMAX_DIODO) {
+                if (vbc > VMAX_DIODO) {
                     vbcAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbc;
+                    vbcAux = vbc;
                 }
 
-                if (bjt[i].vbe > VMAX_DIODO) {
+                if (vbe > VMAX_DIODO) {
                     vbeAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbcAux = vbe;
                 }
 
                 if (vbcAux > 0.3) {
@@ -792,18 +788,18 @@ void montaEstampaAC(void)
                 }
             }
             else {
-                if (bjt[i].vbc < -VMAX_DIODO) {
+                if (vbc < -VMAX_DIODO) {
                     vbcAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbc;
+                    vbcAux = vbc;
                 }
 
-                if (bjt[i].vbe < -VMAX_DIODO) {
+                if (vbe < -VMAX_DIODO) {
                     vbeAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbcAux = vbe;
                 }
 
                 if (- vbcAux > 0.3) {
@@ -844,10 +840,10 @@ void montaEstampaAC(void)
             ie = bjt[i].isbe * (exp(vbeAux / bjt[i].vtbe) - 1) - ge * vbeAux;
 
              // early
-            g1 = bjt[i].alfa * ge * bjt[i].vce / bjt[i].va;
-            g2 = -gc * bjt[i].vce / bjt[i].va;
-            g3 = (bjt[i].alfa * (ie + ge * bjt[i].vbe) - (ic + gc * bjt[i].vbc)) / bjt[i].va;
-            i0 = -(g1 * bjt[i].vbe) - (g2 * bjt[i].vbc);
+            g1 = bjt[i].alfa * ge * vce / bjt[i].va;
+            g2 = -gc * vce / bjt[i].va;
+            g3 = (bjt[i].alfa * (ie + ge * vbe) - (ic + gc * vbc)) / bjt[i].va;
+            i0 = -(g1 * vbe) - (g2 * vbc);
 
             g = gc;
             YnComplex[netlist[i].a][netlist[i].a] += g;
@@ -992,18 +988,14 @@ void lerNetlist()
         else if (elemento == 'Q') { // Q<nome> <noc> <nob> <noe> <tipo> <alfa> <alfar> <Isbe> <VTbe> <Isbc> <VTbc> <VA> <C0be> <C1be> <C0bc> <C1bc>
             srand(time(NULL));
             nBJTs++;
-            sscanf(p, "%10s%10s%10s%10s%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg", noA, noB, noC, bjt[nElementos].tipo, &bjt[nElementos].alfa,
-                &bjt[nElementos].alfar, &bjt[nElementos].isbe, &bjt[nElementos].vtbe, &bjt[nElementos].isbc, &bjt[nElementos].vtbc, &bjt[nElementos].va,
-                &bjt[nElementos].cZerobe, &bjt[nElementos].cUmbe, &bjt[nElementos].cZerobc, &bjt[nElementos].cUmbc);
-
+            sscanf(p, "%10s%10s%10s%10s%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg%lg", noA, noB, noC, bjt[nElementos].tipo, &bjt[nElementos].alfa, &bjt[nElementos].alfar, &bjt[nElementos].isbe, &bjt[nElementos].vtbe, &bjt[nElementos].isbc, &bjt[nElementos].vtbc, &bjt[nElementos].va, &bjt[nElementos].cZerobe, &bjt[nElementos].cUmbe, &bjt[nElementos].cZerobc, &bjt[nElementos].cUmbc);
             if (bjt[nElementos].alfa == 0 && bjt[nElementos].alfar == 0){
                 bjt[nElementos].alfa = 0.995; bjt[nElementos].alfar = 0.5; bjt[nElementos].isbe = 1e-9;
                 bjt[nElementos].vtbe = 43.43e-3; bjt[nElementos].isbc = 1e-9; bjt[nElementos].vtbc = 43.43e-3;
                 bjt[nElementos].va = 100; bjt[nElementos].cZerobe = 5e-12; bjt[nElementos].cUmbe = 1e-16;
                 bjt[nElementos].cZerobc = 5e-12; bjt[nElementos].cUmbc = 1e-16;
             }
-
-            printf("%s %s %s %s %s %e %e %e %e %e %e %e %e %e %e %e\n", netlist[nElementos].nome, noA, noB, noC, bjt[nElementos].tipo, bjt[nElementos].alfa, bjt[nElementos].alfar, bjt[nElementos].isbe, bjt[nElementos].vtbe, bjt[nElementos].isbc, bjt[nElementos].vtbc, bjt[nElementos].va, bjt[nElementos].cZerobe, bjt[nElementos].cUmbe, bjt[nElementos].cZerobc, bjt[nElementos].cUmbc);
+            printf("%s %s %s %s %s %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg\n", netlist[nElementos].nome, noA, noB, noC, bjt[nElementos].tipo, bjt[nElementos].alfa, bjt[nElementos].alfar, bjt[nElementos].isbe, bjt[nElementos].vtbe, bjt[nElementos].isbc, bjt[nElementos].vtbc, bjt[nElementos].va, bjt[nElementos].cZerobe, bjt[nElementos].cUmbe, bjt[nElementos].cZerobc, bjt[nElementos].cUmbc);
             strcpy(netlist[nElementos].tipo, bjt[nElementos].tipo);
             netlist[nElementos].a = numero(noA);
             netlist[nElementos].b = numero(noB);
@@ -1037,9 +1029,9 @@ void lerNetlist()
 int main(void)
 {
     printf("Programa de Analise de Ponto de Operacao e Resposta em Frenquencia de Circuitos com BJT\n");
-    printf("Por: Fernanda Cassinelli,  Ian Secchin,  Rodrigo Ferreira\n");
+    printf("Por: Fernanda Cassinelli,  Ian Secchin,  Rodrigo Ferreira\n\n");
     nElementos = 0; nL = 0; nC = 0; nBJTs = 0; numeroVariaveis = 0;
-    strcpy(lista[0],"0");
+    strcpy(lista[0], "0");
 
     arquivo = 0;
     while (arquivo == 0) {
@@ -1102,6 +1094,8 @@ int main(void)
         printf("O circuito e linear. Tem %d nos, %d variaveis e %d elementos.\n\n", numeroNos, numeroVariaveis, nElementos);
     }
 
+    //mostraNetlist();
+
     int j;
     for (i = 0; i <= numeroVariaveis; i++) { // como no MNA1
         for (j = 0; j <= numeroVariaveis + 1; j++) {
@@ -1115,23 +1109,20 @@ int main(void)
     int k = 0;
     if (nBJTs){
         while (fim == 0) {
-
             contador++;
+
             /* Zera sistema  e monta estampa*/
             montaEstampaDC();
 
             //mostraEstampaDC();
-
             if (resolverSistemaDC()) {
-                exit;
+                exit(1);
             }
-            montaEstampaDC();
-            if (resolverSistemaDC())
-                exit;
+
             // corte ou saturação?
             verificaConvergencia();
 
-            for (k = 0; (k < numeroVariaveis) && (k != -1);) {
+            for (k = 1; (k <= numeroVariaveis) && (k != -1);) {
                 if (convergencia[k] == 1) {
                     k++;
                 }
@@ -1139,6 +1130,7 @@ int main(void)
                     k = -1;
                 }
             }
+
             if ((k == numeroVariaveis + 1) || (contador == 10000) || (nBJTs == 0)) {
                 fim = 1;
             }
@@ -1147,25 +1139,27 @@ int main(void)
     else {
         montaEstampaDC();
         //mostraEstampaDC();
-        if (resolverSistemaDC()){
-            exit;
+        if (resolverSistemaDC()) {
+            exit(1);
         }
     }
 
     printf("%d Iteracoes foram realizadas.\n\n", contador);
 
     printf("%d Elementos nao lineares.\n\n", nBJTs);
-    for (i = 0; i < nBJTs; i++) {
-        for (j = 0; j < numeroVariaveis; j++) {
-            if (convergencia[j] == 0) {
-                contador++;
-            }
+
+    if (nBJTs != 0) {
+        for (i = 1; i <= numeroVariaveis; i++) {
+            printf("Convergencia na variavel %d : %d\n", i, convergencia[i]);
         }
     }
 
-    if (nBJTs != 0) {
-        for (i = 0; i < numeroVariaveis; i++) {
-            printf("Convergencia na variavel %d : %d\n", i, convergencia[i]);
+    contador = 0;
+    for (i = 1; i <= nBJTs; i++) {
+        for (j = 1; j <= numeroVariaveis; j++) {
+            if (convergencia[j] == 0) {
+                contador++;
+            }
         }
     }
 
@@ -1203,7 +1197,7 @@ int main(void)
 
             arquivo = fopen(novonome, "w");
             fprintf(arquivo, "f ");
-            for (i = 0; i< numeroVariaveis; i++) {
+            for (i = 1; i <= numeroVariaveis; i++) {
                 fprintf(arquivo, "%sm %sf ", lista[i], lista[i]);
             }
             fprintf(arquivo, "\n");
@@ -1213,13 +1207,13 @@ int main(void)
             }
             else {
                 for (frequencia = freqInicial; frequencia <= freqFinal; frequencia += passo) {
-                    //nBJTs=0;
+                    //nBJTs = 0;
                     montaEstampaAC();
                     resolversistemaAC();
 
                     fprintf(arquivo, "%g ", frequencia);
                     for (i = 0; i < numeroVariaveis; i++) {
-                        fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180/PI) * carg(YnComplex[i][numeroVariaveis + 1]));
+                        fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180 / PI) * carg(YnComplex[i][numeroVariaveis + 1]));
                     }
                     fprintf(arquivo, "\n");
                 }
@@ -1237,7 +1231,7 @@ int main(void)
 
             arquivo = fopen(novonome, "w");
             fprintf(arquivo, "f ");
-            for (i = 0; i < numeroVariaveis; i++) {
+            for (i = 1; i <= numeroVariaveis; i++) {
                 fprintf(arquivo, "%sm %sf ", lista[i], lista[i]);
             }
             fprintf(arquivo, "\n");
@@ -1247,14 +1241,14 @@ int main(void)
             }
 
             else {
-                for ( frequencia = freqInicial; frequencia <= freqFinal; frequencia *= pow(10,passo)) {
-                    //nBJTs=0;
+                for ( frequencia = freqInicial; frequencia <= freqFinal; frequencia *= pow(10, passo)) {
+                    //nBJTs = 0;
                     montaEstampaAC();
                     resolversistemaAC();
 
                     fprintf(arquivo, "%g ", frequencia);
                     for (i = 1; i <= numeroVariaveis; i++) {
-                        fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180/PI) * carg(YnComplex[i][numeroVariaveis + 1]));
+                        fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180 / PI) * carg(YnComplex[i][numeroVariaveis + 1]));
                     }
                     fprintf(arquivo,"\n");
                 }
@@ -1267,7 +1261,7 @@ int main(void)
 
             arquivo = fopen(novonome, "w");
             fprintf(arquivo, "f ");
-            for (i = 0; i < numeroVariaveis; i++) {
+            for (i = 1; i <= numeroVariaveis; i++) {
                 fprintf(arquivo, "%sm %sf ", lista[i], lista[i]);
             }
             fprintf(arquivo, "\n");
@@ -1276,14 +1270,14 @@ int main(void)
                 printf("Erro, nao foi possivel abrir o arquivo\n");
             }
             else {
-                for (frequencia = freqInicial; frequencia <= freqFinal; frequencia *= pow(2,passo)) {
-                    //nBJTs=0;
+                for (frequencia = freqInicial; frequencia <= freqFinal; frequencia *= pow(2, passo)) {
+                    //nBJTs = 0;
                     montaEstampaAC();
                     resolversistemaAC();
 
                     fprintf(arquivo, "%g ", frequencia);
                     for (i = 1; i <= numeroVariaveis; i++) {
-                        fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180/PI) * carg(YnComplex[i][numeroVariaveis + 1]));
+                        fprintf(arquivo, "%g %g ", cabs(YnComplex[i][numeroVariaveis + 1]), (180 / PI) * carg(YnComplex[i][numeroVariaveis + 1]));
                     }
                     fprintf(arquivo, "\n");
                 }
