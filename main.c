@@ -500,7 +500,7 @@ void montaEstampaDC(void)
                     vbeAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbeAux = bjt[i].vbe;
                 }
 
                 if (-vbcAux > 0.3) {
@@ -756,7 +756,7 @@ void montaEstampaAC(void)
                     vbeAux = VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbeAux = bjt[i].vbe;
                 }
 
                 if (vbcAux > 0.3) {
@@ -799,7 +799,7 @@ void montaEstampaAC(void)
                     vbeAux = -VMAX_DIODO;
                 }
                 else {
-                    vbcAux = bjt[i].vbe;
+                    vbeAux = bjt[i].vbe;
                 }
 
                 if (- vbcAux > 0.3) {
